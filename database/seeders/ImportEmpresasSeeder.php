@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-Illuminate\Database\Seeder;
-Illuminate\Support\Facades\DB;
-Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ImportEmpresasSeeder extends Seeder
 {
@@ -24,25 +24,27 @@ class ImportEmpresasSeeder extends Seeder
         array_shift($data);
 
         foreach ($data as $row) {
-            // Ignora linhas vazias
+            // Ignora linhas totalmente vazias
             if (empty($row[0]) && empty($row[1])) {
                 continue;
             }
 
+            // Nota: Se a sua tabela no MySQL tiver nome em português ('empresas') 
+            // ou colunas em português, ajuste os nomes das chaves abaixo:
             DB::table('companies')->updateOrInsert(
                 ['cnpj' => $row[1]], // Evita duplicar se o CNPJ já existir
                 [
-                    'code'             => $row[0] ?? null,  // Código
-                    'cnpj'             => $row[1] ?? null,  // CNPJ
-                    'social_reason'    => $row[2] ?? null,  // Razão Social
-                    'status'           => $row[3] ?? null,  // Status
-                    'tax_regime'       => $row[4] ?? null,  // Regime Tributário
-                    'reduced_base'     => $row[5] ?? null,  // Base Reduzida
-                    'annex'            => $row[6] ?? null,  // Anexo
-                    'fator_r'          => $row[7] ?? null,  // Fator R
-                    'partners'         => $row[8] ?? null,  // Sócios
-                    'created_at'       => now(),
-                    'updated_at'       => now(),
+                    'code'          => $row[0] ?? null,  // Código
+                    'cnpj'          => $row[1] ?? null,  // CNPJ
+                    'social_reason' => $row[2] ?? null,  // Razão Social
+                    'status'        => $row[3] ?? null,  // Status
+                    'tax_regime'    => $row[4] ?? null,  // Regime Tributário
+                    'reduced_base'  => $row[5] ?? null,  // Base Reduzida
+                    'annex'         => $row[6] ?? null,  // Anexo
+                    'fator_r'       => $row[7] ?? null,  // Fator R
+                    'partners'      => $row[8] ?? null,  // Sócios
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
                 ]
             );
         }
