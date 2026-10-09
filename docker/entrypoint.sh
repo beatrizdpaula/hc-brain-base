@@ -18,11 +18,12 @@ sed -i "s/Listen 80/Listen ${PORT:-10000}/" /etc/apache2/ports.conf
 # Atualiza o schema sem apagar nada
 php artisan migrate --force
 
-# Executa o seeder de importação das empresas do ficheiro Excel
-
-
 # Semeia só se a base estiver vazia e garante o acesso inicial do ambiente.
 php artisan hc:preparar
+
+# A planilha é pesada: importa em segundo plano para o Apache abrir a porta
+# dentro do prazo do Render. Uma falha aqui não derruba o contêiner.
+runuser -u www-data -- php artisan db:seed --class=ImportEmpresasSeeder --force &
 
 # O agendador roda ao lado do Apache
 runuser -u www-data -- php artisan schedule:work &
