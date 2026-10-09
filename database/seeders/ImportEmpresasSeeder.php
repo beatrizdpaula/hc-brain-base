@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Empresa;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportEmpresasSeeder extends Seeder
@@ -21,7 +21,7 @@ class ImportEmpresasSeeder extends Seeder
         $worksheet = $spreadsheet->getActiveSheet();
         $data = $worksheet->toArray();
 
-        // Remove a linha de cabeçalho
+        // Remove o cabeçalho
         array_shift($data);
 
         foreach ($data as $row) {
@@ -29,13 +29,12 @@ class ImportEmpresasSeeder extends Seeder
                 continue;
             }
 
-            // Identifica o nome/razão social na planilha
+            // Mapeia o nome/razão social
             $nomeEmpresa = $row[2] ?? $row[0] ?? 'Empresa Sem Nome';
 
-            DB::table('empresas')->insert([
-                'nome'       => $nomeEmpresa,
-                'created_at' => now(),
-                'updated_at' => now(),
+            // Cria o registo usando o Model da aplicação para gerir a chave primária e colunas
+            Empresa::create([
+                'nome' => $nomeEmpresa,
             ]);
         }
 
