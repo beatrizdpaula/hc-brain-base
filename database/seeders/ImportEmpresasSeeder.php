@@ -21,7 +21,7 @@ class ImportEmpresasSeeder extends Seeder
         $worksheet = $spreadsheet->getActiveSheet();
         $data = $worksheet->toArray();
 
-        // Remove a linha do cabeçalho
+        // Remove a linha de cabeçalho
         array_shift($data);
 
         foreach ($data as $row) {
@@ -29,13 +29,13 @@ class ImportEmpresasSeeder extends Seeder
                 continue;
             }
 
-            // Insere apenas nas colunas que realmente existem na tabela 'empresas'
+            // Identifica o nome/razão social na planilha
+            $nomeEmpresa = $row[2] ?? $row[0] ?? 'Empresa Sem Nome';
+
             DB::table('empresas')->insert([
-                'razao_social'      => $row[2] ?? $row[0] ?? 'Sem Nome',
-                'status'            => $row[3] ?? 'Ativo',
-                'regime_tributario' => $row[4] ?? null,
-                'created_at'        => now(),
-                'updated_at'        => now(),
+                'nome'       => $nomeEmpresa,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
 
