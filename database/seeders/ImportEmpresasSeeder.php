@@ -30,12 +30,14 @@ class ImportEmpresasSeeder extends Seeder
                 continue;
             }
 
-            // Mapeia o nome/razão social da empresa
+            // Mapeia os dados da planilha
             $nomeEmpresa = $row[2] ?? $row[0] ?? 'Empresa Sem Nome';
+            $setorEmpresa = $row[3] ?? 'Geral'; // Define um valor padrão se a coluna estiver vazia
 
             DB::table('empresas')->insert([
                 'id'         => (string) Str::uuid(),
                 'nome'       => $nomeEmpresa,
+                'setor'      => $setorEmpresa,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
