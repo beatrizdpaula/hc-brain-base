@@ -17,36 +17,23 @@ class ImportEmpresasSeeder extends Seeder
             return;
         }
 
-        // Carrega a planilha usando o PhpSpreadsheet
         $spreadsheet = IOFactory::load($filePath);
         $worksheet = $spreadsheet->getActiveSheet();
         $data = $worksheet->toArray();
 
-        // Remove a primeira linha (cabeçalhos)
+        // Remove a linha do cabeçalho
         array_shift($data);
 
         foreach ($data as $row) {
-            // Ignora linhas vazias
             if (empty($row[0]) && empty($row[1])) {
                 continue;
             }
 
-            // Repare na ordem das colunas vindo da planilha no log:
-            // $row[0] = CNPJ sem formatação (ex: 40460376000101)
-            // $row[1] = Código (ex: 190)
-            // $row[2] = CNPJ formatado (ex: 41.649.408/0001-76)
-            // $row[3] = Status (ex: Inativo)
-            // $row[4] = Regime Tributário (ex: Simples Nacional)
-
+            // Insere apenas nas colunas que realmente existem na tabela 'empresas'
             DB::table('empresas')->insert([
-                'codigo'            => $row[1] ?? null,
-                'razao_social'      => $row[2] ?? null,
-                'status'            => $row[3] ?? null,
+                'razao_social'      => $row[2] ?? $row[0] ?? 'Sem Nome',
+                'status'            => $row[3] ?? 'Ativo',
                 'regime_tributario' => $row[4] ?? null,
-                'base_reduzida'     => $row[5] ?? null,
-                'anexo'             => $row[6] ?? null,
-                'fator_r'           => $row[7] ?? null,
-                'socios'            => $row[8] ?? null,
                 'created_at'        => now(),
                 'updated_at'        => now(),
             ]);
