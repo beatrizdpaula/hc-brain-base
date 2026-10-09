@@ -3,7 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Empresa;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportEmpresasSeeder extends Seeder
@@ -29,12 +30,14 @@ class ImportEmpresasSeeder extends Seeder
                 continue;
             }
 
-            // Mapeia o nome/razão social
+            // Mapeia o nome/razão social da empresa
             $nomeEmpresa = $row[2] ?? $row[0] ?? 'Empresa Sem Nome';
 
-            // Cria o registo usando o Model da aplicação para gerir a chave primária e colunas
-            Empresa::create([
-                'nome' => $nomeEmpresa,
+            DB::table('empresas')->insert([
+                'id'         => (string) Str::uuid(),
+                'nome'       => $nomeEmpresa,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
 
