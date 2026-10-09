@@ -1,0 +1,1315 @@
+/* ==========================================================================
+   SOFIA — INTERFACE DE IA
+   Lateral com os chats recentes. No centro, a saudação, o campo em pílula
+   e as sugestões. Com a conversa aberta, o campo desce para o rodapé.
+   ========================================================================== */
+
+.sofia-ai-screen {
+    position: relative;
+    display: flex;
+    height: calc(100vh - 52px);
+    overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   LISTA DE CHATS
+   -------------------------------------------------------------------------- */
+.sofia-historico {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: 264px;
+    min-height: 0;
+    padding: var(--esp-3) var(--esp-3) 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.sofia-historico-topo {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    min-height: 32px;
+}
+
+.sofia-nova-conversa {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    width: 100%;
+    height: 36px;
+    margin-top: var(--esp-2);
+    padding: 0 var(--esp-3);
+    border: none;
+    border-radius: var(--raio-sm);
+    background: transparent;
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+    font-weight: var(--peso-medio);
+    text-align: left;
+    transition: var(--transicao);
+}
+
+.sofia-nova-conversa svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sofia-nova-conversa:hover {
+    background: var(--surface-hover);
+}
+
+.sofia-busca {
+    display: block;
+    margin-top: var(--esp-2);
+}
+
+.sofia-busca input {
+    width: 100%;
+    height: 36px;
+    padding: 0 var(--esp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+    background: var(--bg);
+    color: var(--texto-forte);
+    font-size: var(--texto-sm);
+    outline: none;
+}
+
+.sofia-busca input:focus {
+    border-color: var(--roxo);
+}
+
+.sofia-historico-rotulo {
+    margin: var(--esp-5) var(--esp-3) var(--esp-2);
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+}
+
+.sofia-conversas {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.sofia-historico-vazio {
+    margin: var(--esp-1) var(--esp-3);
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+}
+
+.sofia-conversa {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-1);
+    min-height: 36px;
+    margin-bottom: 2px;
+    border-radius: var(--raio-sm);
+}
+
+.sofia-conversa:hover,
+.sofia-conversa.ativa {
+    background: var(--surface-hover);
+}
+
+.sofia-conversa-abrir {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 48px;
+    padding: var(--esp-2) var(--esp-2) var(--esp-2) var(--esp-3);
+    overflow: hidden;
+    border: none;
+    background: transparent;
+    color: var(--texto);
+    text-align: left;
+}
+
+.sofia-conversa-titulo,
+.sofia-conversa-previa {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sofia-conversa-titulo {
+    color: var(--texto);
+    font-size: var(--texto-base);
+}
+
+.sofia-conversa-previa {
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+}
+
+.sofia-conversa.ativa .sofia-conversa-abrir,
+.sofia-conversa-abrir:hover {
+    color: var(--texto-forte);
+}
+
+.sofia-conversa.ativa .sofia-conversa-titulo,
+.sofia-conversa-abrir:hover .sofia-conversa-titulo {
+    color: var(--texto-forte);
+}
+
+.sofia-conversa-apagar {
+    flex-shrink: 0;
+    margin-right: var(--esp-1);
+    opacity: 0;
+}
+
+.sofia-conversa:hover .sofia-conversa-apagar,
+.sofia-conversa:focus-within .sofia-conversa-apagar {
+    opacity: 1;
+}
+
+.sofia-usuario {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--esp-3);
+    margin: var(--esp-2) calc(var(--esp-3) * -1) 0;
+    padding: var(--esp-3) var(--esp-4);
+    border-top: 1px solid var(--border);
+}
+
+.sofia-usuario-avatar {
+    display: grid;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+}
+
+.sofia-usuario-texto {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sofia-usuario-texto strong,
+.sofia-usuario-texto small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sofia-usuario-texto strong {
+    color: var(--texto-forte);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+}
+
+.sofia-usuario-texto small {
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+}
+
+.sofia-historico-fundo {
+    display: none;
+}
+
+/* --------------------------------------------------------------------------
+   COLUNA DA CONVERSA
+   -------------------------------------------------------------------------- */
+.sofia-ai-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.sofia-topo {
+    display: grid;
+    flex-shrink: 0;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--esp-3);
+    height: 52px;
+    padding: 0 var(--esp-4);
+}
+
+.sofia-topo-esq,
+.sofia-topo-dir {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-width: 0;
+}
+
+.sofia-topo-dir {
+    justify-content: flex-end;
+}
+
+.sofia-abrir-historico {
+    display: none;
+}
+
+.sofia-titulo-conversa {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+    font-weight: var(--peso-medio);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sofia-modos {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-pill);
+    background: var(--surface);
+}
+
+.sofia-modos button {
+    height: 28px;
+    padding: 0 var(--esp-4);
+    border: none;
+    border-radius: var(--raio-pill);
+    background: transparent;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+    transition: var(--transicao);
+}
+
+.sofia-modos button:hover {
+    color: var(--texto-forte);
+}
+
+.sofia-modos button.active {
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+}
+
+.sofia-modelo {
+    height: 32px;
+    padding: 0 var(--esp-3);
+    border: none;
+    border-radius: var(--raio-sm);
+    background: transparent;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+}
+
+.sofia-modelo:hover {
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+}
+
+.sofia-coluna {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    width: min(720px, 100%);
+    min-height: 0;
+    margin: 0 auto;
+    padding: 0 var(--esp-6) var(--esp-8);
+}
+
+.sofia-palco {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.sofia-coluna.em-conversa {
+    justify-content: flex-start;
+    padding-bottom: var(--esp-4);
+}
+
+.sofia-coluna.em-conversa .sofia-palco {
+    display: flex;
+}
+
+/* --------------------------------------------------------------------------
+   BOAS-VINDAS E SUGESTÕES
+   -------------------------------------------------------------------------- */
+.sofia-welcome {
+    margin-bottom: var(--esp-6);
+    text-align: center;
+}
+
+.sofia-welcome[hidden],
+.sofia-suggestions[hidden] {
+    display: none;
+}
+
+.sofia-marca {
+    display: grid;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto var(--esp-4);
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--roxo), var(--azul));
+    box-shadow: 0 16px 40px rgb(124 108 245 / 28%);
+    color: #fff;
+    font-size: var(--texto-xl);
+    font-weight: var(--peso-forte);
+    place-items: center;
+}
+
+.sofia-kicker {
+    margin-bottom: var(--esp-2);
+    color: var(--roxo-claro);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-medio);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sofia-welcome h1 {
+    margin: 0;
+    color: var(--texto-forte);
+    font-size: var(--texto-2xl);
+    font-weight: var(--peso-medio);
+    letter-spacing: -0.03em;
+}
+
+.sofia-welcome-texto {
+    max-width: 46ch;
+    margin: var(--esp-3) auto 0;
+    color: var(--texto-suave);
+    font-size: var(--texto-md);
+    line-height: var(--altura-solta);
+}
+
+.sofia-suggestions {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    margin: var(--esp-5) auto 0;
+    gap: var(--esp-2);
+}
+
+.sofia-suggestion {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    width: fit-content;
+    max-width: 100%;
+    min-height: 36px;
+    padding: 0 var(--esp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-pill);
+    background: var(--surface);
+    color: var(--texto);
+    font-size: var(--texto-md);
+    text-align: left;
+    transition: var(--transicao);
+}
+
+.sofia-suggestion:hover {
+    border-color: var(--roxo);
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+}
+
+.sofia-suggestion-icon {
+    display: grid;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--texto-suave);
+    place-items: center;
+}
+
+.sofia-suggestion-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   CONVERSA
+   -------------------------------------------------------------------------- */
+.chat {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    padding: var(--esp-4) 0;
+    overflow-y: auto;
+}
+
+.sofia-coluna.em-conversa .chat.active {
+    display: block;
+}
+
+/* A barra de rolagem da conversa só aparece quando o chat está em uso. Parada
+   no canto de uma coluna estreita, ela se lê como um traço solto por cima do
+   texto em vez de um controle. O espaço dela segue reservado, então nada
+   desloca quando ela surge. */
+.chat {
+    scrollbar-color: transparent transparent;
+}
+
+.chat:hover,
+.chat:focus-within {
+    scrollbar-color: var(--border-forte) transparent;
+}
+
+.chat::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+.chat:hover::-webkit-scrollbar-thumb,
+.chat:focus-within::-webkit-scrollbar-thumb {
+    background: var(--border-forte);
+    background-clip: padding-box;
+}
+
+.message {
+    display: flex;
+    max-width: 100%;
+    margin-bottom: var(--esp-5);
+    font-size: var(--texto-md);
+    line-height: var(--altura-solta);
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.message.user .message-texto {
+    max-width: min(85%, 520px);
+    padding: var(--esp-3) var(--esp-4);
+    border-radius: var(--raio-lg);
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+    white-space: pre-line;
+}
+
+.message.user.message-voz .message-texto {
+    border: 1px solid rgb(124 108 245 / 32%);
+    background: var(--roxo-fundo);
+}
+
+.sofia-voz-etiqueta {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    margin-bottom: var(--esp-1);
+    color: var(--roxo-claro);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-medio);
+}
+
+.sofia-voz-etiqueta svg {
+    width: 14px;
+    height: 14px;
+}
+
+.message.bot {
+    gap: var(--esp-3);
+    align-items: flex-start;
+}
+
+.message-corpo {
+    min-width: 0;
+}
+
+.message.bot .message-texto {
+    padding-top: var(--esp-1);
+    color: var(--texto);
+    white-space: pre-line;
+}
+
+.sofia-avatar {
+    display: grid;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    margin-top: 2px;
+    border-radius: var(--raio-sm);
+    background: linear-gradient(135deg, var(--roxo), var(--azul));
+    color: #fff;
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+    place-items: center;
+}
+
+.message-acoes {
+    display: flex;
+    gap: var(--esp-1);
+    margin-top: var(--esp-2);
+}
+
+.sofia-copiar,
+.sofia-ouvir {
+    padding: 0 var(--esp-2);
+    border: none;
+    border-radius: var(--raio-sm);
+    background: transparent;
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    opacity: 0;
+}
+
+.message.bot:hover .sofia-copiar,
+.message.bot:hover .sofia-ouvir,
+.message.bot:focus-within .sofia-copiar,
+.message.bot:focus-within .sofia-ouvir,
+.sofia-copiar.copiado,
+.sofia-ouvir.falando {
+    opacity: 1;
+}
+
+.sofia-copiar:hover,
+.sofia-ouvir:hover {
+    color: var(--texto-forte);
+    background: var(--surface-hover);
+}
+
+.sofia-ouvir.falando {
+    color: var(--roxo-claro);
+}
+
+/* --------------------------------------------------------------------------
+   COMPOSITOR
+   -------------------------------------------------------------------------- */
+.sofia-compose-wrap {
+    flex-shrink: 0;
+}
+
+.chat-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+}
+
+.sofia-pill {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--esp-2);
+    min-height: 52px;
+    padding: var(--esp-2) var(--esp-2) var(--esp-2) var(--esp-3);
+    border: 1px solid var(--border-forte);
+    border-radius: 26px;
+    background: var(--surface-alto);
+    box-shadow: var(--sombra-md);
+    transition: var(--transicao);
+}
+
+.chat-form:focus-within .sofia-pill {
+    border-color: var(--roxo);
+}
+
+.sofia-pill-btn {
+    display: grid;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 2px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto-suave);
+    place-items: center;
+    transition: var(--transicao);
+}
+
+.sofia-pill-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sofia-pill-btn:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+}
+
+.sofia-mic-wrap,
+.sofia-voz-wrap {
+    display: flex;
+    flex-shrink: 0;
+}
+
+/*
+  Navegador sem reconhecimento de voz e servidor sem transcrição: o microfone
+  fica desabilitado e deixa o clique passar para o invólucro, que explica o
+  caminho — digitar, ou abrir a Sofia no Chrome ou no Edge. A conversa por voz
+  usa o mesmo arranjo, porque depende do reconhecimento.
+*/
+.sofia-mic-wrap.sem-voz,
+.sofia-voz-wrap.sem-voz {
+    cursor: not-allowed;
+}
+
+.sofia-mic-wrap.sem-voz .sofia-mic,
+.sofia-voz-wrap.sem-voz .sofia-voz-btn {
+    pointer-events: none;
+}
+
+.sofia-voz-btn.ativa {
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+}
+
+.chat-form textarea {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    max-height: 160px;
+    margin: 0;
+    padding: var(--esp-2) 0;
+    border: none;
+    background: transparent;
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+    line-height: var(--altura-normal);
+    resize: none;
+    outline: none;
+}
+
+/* A pílula inteira acende no foco; o anel geral em volta do texto deixaria
+   um contorno solto dentro dela. */
+.chat-form textarea:focus-visible {
+    box-shadow: none;
+}
+
+.sofia-send {
+    display: grid;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 1px;
+    border: none;
+    border-radius: 50%;
+    background: var(--roxo);
+    color: #fff;
+    place-items: center;
+    transition: var(--transicao);
+}
+
+.sofia-send svg {
+    width: 17px;
+    height: 17px;
+}
+
+.sofia-send:hover {
+    background: var(--roxo-claro);
+    color: var(--sobre-roxo-claro);
+}
+
+.sofia-attachment {
+    display: none;
+    align-items: center;
+    gap: var(--esp-2);
+    width: fit-content;
+    max-width: 100%;
+    padding: var(--esp-1) var(--esp-2) var(--esp-1) var(--esp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-pill);
+    background: var(--surface);
+    color: var(--texto);
+    font-size: var(--texto-sm);
+}
+
+.sofia-attachment.show {
+    display: flex;
+}
+
+.sofia-attachment svg {
+    width: 14px;
+    height: 14px;
+}
+
+.sofia-attachment .icon-button {
+    width: 24px;
+    height: 24px;
+}
+
+.sofia-attachment-name {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sofia-disclaimer {
+    display: block;
+    margin-top: var(--esp-3);
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    text-align: center;
+}
+
+.sofia-coluna.gravando .sofia-pill,
+.sofia-coluna.gravando .sofia-attachment,
+.sofia-coluna.gravando .sofia-suggestions {
+    display: none;
+}
+
+.sofia-gravacao {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    min-height: 52px;
+    padding: var(--esp-3) var(--esp-3) var(--esp-3) var(--esp-2);
+    border: 1px solid var(--roxo);
+    border-radius: 26px;
+    background: var(--surface-alto);
+    box-shadow:
+        0 0 0 4px var(--roxo-fundo),
+        var(--sombra-md);
+}
+
+.sofia-gravacao[hidden] {
+    display: none;
+}
+
+/* A linha repete o compositor: cancelar à esquerda, onda no meio, ações à
+   direita — assim a troca entre pílula e gravação não desloca a tela. */
+.sofia-gravacao-linha {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+}
+
+.sofia-gravacao-pulso {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--vermelho);
+    box-shadow: 0 0 0 0 rgb(240 99 126 / 60%);
+    animation: sofia-gravando 1.4s ease-out infinite;
+}
+
+.sofia-gravacao-estado {
+    flex-shrink: 0;
+    color: var(--texto-forte);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+}
+
+.sofia-gravacao-tempo {
+    flex-shrink: 0;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+.sofia-onda {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 40px;
+    height: 24px;
+}
+
+.sofia-onda i {
+    width: 3px;
+    height: 30%;
+    border-radius: var(--raio-pill);
+    background: var(--roxo-claro);
+    animation: sofia-onda 1.1s ease-in-out infinite;
+}
+
+.sofia-onda i:nth-child(2n) {
+    animation-delay: 0.12s;
+}
+
+.sofia-onda i:nth-child(3n) {
+    animation-delay: 0.26s;
+}
+
+.sofia-onda i:nth-child(5n) {
+    animation-delay: 0.4s;
+}
+
+.sofia-gravacao-parcial {
+    min-height: 1.5em;
+    padding: 0 var(--esp-2);
+    color: var(--texto);
+    font-size: var(--texto-md);
+    line-height: var(--altura-solta);
+}
+
+.sofia-gravacao-botao {
+    display: grid;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-forte);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto);
+    place-items: center;
+    transition: var(--transicao);
+}
+
+.sofia-gravacao-botao svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sofia-gravacao-botao:hover {
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+}
+
+.sofia-gravacao-enviar {
+    display: grid;
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: var(--roxo);
+    color: #fff;
+    place-items: center;
+    transition: var(--transicao);
+}
+
+.sofia-gravacao-enviar svg {
+    width: 17px;
+    height: 17px;
+}
+
+.sofia-gravacao-enviar:hover {
+    background: var(--roxo-claro);
+    color: var(--sobre-roxo-claro);
+}
+
+/* --------------------------------------------------------------------------
+   CONVERSA POR VOZ
+   A tela inteira sai de cena e fica só a esfera: falar com a Sofia não é
+   ler uma conversa, é olhar para uma coisa só.
+   -------------------------------------------------------------------------- */
+.sofia-voz-tela {
+    position: fixed;
+    z-index: 150;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-4);
+    padding: var(--esp-8) var(--esp-6);
+    background: radial-gradient(120% 80% at 50% 42%, var(--voz-fundo) 0%, var(--bg) 72%);
+}
+
+/* O halo da esfera passa da caixa dela; sem esta folga o texto cai dentro
+   do brilho e fica ilegível. */
+.sofia-voz-tela .sofia-esfera {
+    margin-bottom: var(--esp-12);
+}
+
+.sofia-voz-tela[hidden] {
+    display: none;
+}
+
+.sofia-voz-fechar {
+    position: absolute;
+    top: var(--esp-5);
+    right: var(--esp-5);
+    display: grid;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-forte);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texto-suave);
+    place-items: center;
+    transition: var(--transicao);
+}
+
+.sofia-voz-fechar svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sofia-voz-fechar:hover {
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+}
+
+.sofia-voz-estado {
+    color: var(--texto-forte);
+    font-size: var(--texto-lg);
+    font-weight: var(--peso-medio);
+    letter-spacing: -0.01em;
+}
+
+.sofia-voz-legenda {
+    max-width: 52ch;
+    min-height: 1.5em;
+    color: var(--texto-suave);
+    font-size: var(--texto-md);
+    line-height: var(--altura-solta);
+    text-align: center;
+}
+
+.sofia-voz-acoes {
+    display: flex;
+    gap: var(--esp-2);
+}
+
+.sofia-voz-interromper,
+.sofia-voz-sair {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    height: 38px;
+    padding: 0 var(--esp-4);
+    border: 1px solid var(--border-forte);
+    border-radius: var(--raio-pill);
+    background: transparent;
+    color: var(--texto);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+    transition: var(--transicao);
+}
+
+.sofia-voz-interromper[hidden] {
+    display: none;
+}
+
+.sofia-voz-interromper svg {
+    width: 14px;
+    height: 14px;
+}
+
+.sofia-voz-interromper:hover,
+.sofia-voz-sair:hover {
+    border-color: var(--roxo);
+    background: var(--surface-hover);
+    color: var(--texto-forte);
+}
+
+/* --------------------------------------------------------------------------
+   A ESFERA
+   Três manchas desfocadas girando dentro de um círculo, mais um halo. O
+   estado muda a velocidade do giro (`--giro`) e a força do brilho; o volume
+   da voz chega em `--nivel`, de 0 a 1, e abre a esfera no mesmo instante.
+   -------------------------------------------------------------------------- */
+.sofia-esfera {
+    --nivel: 0;
+    --giro: 9s;
+
+    position: relative;
+    width: min(46vmin, 320px);
+    aspect-ratio: 1;
+    transform: scale(calc(1 + var(--nivel) * 0.14));
+    transition: transform 90ms linear;
+}
+
+.sofia-esfera-brilho {
+    position: absolute;
+    inset: -20%;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgb(124 108 245 / 45%) 0%,
+        rgb(124 108 245 / 0%) 66%
+    );
+    opacity: calc(0.3 + var(--nivel) * 0.7);
+    filter: blur(12px);
+}
+
+/* O núcleo é ilustração, não superfície: é um corpo que brilha, e um corpo
+   que brilha é escuro nos dois temas. Por isso ele não usa os tokens. */
+.sofia-esfera-nucleo {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, #2b2555 0%, #0d1322 72%);
+    box-shadow:
+        inset 0 0 60px rgb(124 108 245 / 35%),
+        0 0 80px rgb(124 108 245 / 22%);
+}
+
+.sofia-esfera-nucleo i {
+    position: absolute;
+    width: 72%;
+    height: 72%;
+    border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+    opacity: 0.75;
+    filter: blur(14px);
+    animation: sofia-esfera-gira var(--giro) linear infinite;
+}
+
+.sofia-esfera-nucleo i:nth-child(1) {
+    top: -6%;
+    left: -4%;
+    background: var(--roxo);
+}
+
+.sofia-esfera-nucleo i:nth-child(2) {
+    right: -8%;
+    bottom: -6%;
+    background: var(--azul);
+    animation-duration: calc(var(--giro) * 1.45);
+    animation-direction: reverse;
+}
+
+.sofia-esfera-nucleo i:nth-child(3) {
+    top: 18%;
+    left: 22%;
+    width: 52%;
+    height: 52%;
+    background: var(--roxo-claro);
+    opacity: 0.6;
+    animation-duration: calc(var(--giro) * 1.9);
+}
+
+/* O anel só aparece quando a Sofia está pensando: é o único estado em que
+   nada acontece no áudio, e sem ele a espera ficaria idêntica à escuta. */
+.sofia-esfera-anel {
+    position: absolute;
+    inset: -9%;
+    border: 2px solid transparent;
+    border-top-color: var(--roxo-claro);
+    border-radius: 50%;
+    opacity: 0;
+    animation: sofia-esfera-anel 1.5s linear infinite;
+}
+
+.sofia-esfera[data-estado="pensando"] {
+    --giro: 26s;
+
+    transform: scale(0.84);
+}
+
+.sofia-esfera[data-estado="pensando"] .sofia-esfera-brilho {
+    opacity: 0.16;
+}
+
+.sofia-esfera[data-estado="pensando"] .sofia-esfera-nucleo i {
+    opacity: 0.4;
+}
+
+.sofia-esfera[data-estado="pensando"] .sofia-esfera-anel {
+    opacity: 1;
+}
+
+.sofia-esfera[data-estado="falando"] {
+    --giro: 4.5s;
+}
+
+.sofia-esfera[data-estado="falando"] .sofia-esfera-brilho {
+    background: radial-gradient(
+        circle,
+        rgb(167 155 255 / 62%) 0%,
+        rgb(124 108 245 / 0%) 68%
+    );
+}
+
+.sofia-esfera[data-estado="falando"] .sofia-esfera-nucleo {
+    box-shadow:
+        inset 0 0 70px rgb(167 155 255 / 55%),
+        0 0 120px rgb(124 108 245 / 42%);
+}
+
+.sofia-esfera[data-estado="falando"] .sofia-esfera-nucleo i {
+    opacity: 1;
+}
+
+@keyframes sofia-esfera-gira {
+    from {
+        transform: rotate(0deg) translate(6%, 4%);
+    }
+
+    to {
+        transform: rotate(360deg) translate(6%, 4%);
+    }
+}
+
+@keyframes sofia-esfera-anel {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.sofia-dica {
+    margin-top: var(--esp-2);
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    line-height: var(--altura-normal);
+    text-align: center;
+}
+
+.sofia-aviso {
+    margin-top: var(--esp-3);
+    padding: var(--esp-2) var(--esp-3);
+    border-radius: var(--raio-md);
+    background: var(--vermelho-fundo);
+    color: var(--vermelho);
+    font-size: var(--texto-sm);
+    line-height: var(--altura-normal);
+    text-align: center;
+}
+
+.sofia-coluna.enviando-audio .sofia-pill {
+    opacity: 0.72;
+}
+
+@keyframes sofia-gravando {
+    0% {
+        box-shadow: 0 0 0 0 rgb(240 99 126 / 55%);
+    }
+
+    100% {
+        box-shadow: 0 0 0 10px rgb(240 99 126 / 0%);
+    }
+}
+
+@keyframes sofia-onda {
+    0%,
+    100% {
+        height: 25%;
+    }
+
+    50% {
+        height: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sofia-gravacao-pulso,
+    .sofia-digitando i,
+    .sofia-onda i,
+    .sofia-esfera-nucleo i,
+    .sofia-esfera-anel {
+        animation: none;
+    }
+
+    /* Sem animação a onda vira uma régua: ainda marca que o áudio está ativo. */
+    .sofia-onda i {
+        height: 55%;
+    }
+
+    /* A esfera para de pulsar: o estado passa a ser só cor e brilho. O nível
+       do microfone nem é lido aqui, então a escala fica fixa. */
+    .sofia-esfera,
+    .sofia-esfera[data-estado="pensando"] {
+        transform: none;
+        transition: none;
+    }
+}
+
+.sofia-coluna.em-conversa .sofia-disclaimer {
+    margin-bottom: var(--esp-2);
+}
+
+.sofia-digitando {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+}
+
+.sofia-digitando i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--roxo-claro);
+    animation: sofia-pulso 1s ease-in-out infinite;
+}
+
+.sofia-digitando i:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.sofia-digitando i:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes sofia-pulso {
+    0%,
+    100% {
+        opacity: 0.25;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+}
+
+@media (max-width: 860px) {
+    .sofia-abrir-historico {
+        display: grid;
+    }
+
+    .sofia-titulo-conversa {
+        display: none;
+    }
+
+    .sofia-historico {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 16;
+        box-shadow: var(--sombra-lg);
+        transform: translateX(-105%);
+        transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .sofia-ai-screen.historico-aberto .sofia-historico {
+        transform: none;
+    }
+
+    .sofia-ai-screen.historico-aberto .sofia-historico-fundo {
+        position: absolute;
+        inset: 0;
+        z-index: 15;
+        display: block;
+        border: none;
+        background: var(--sobreposicao);
+    }
+
+    .sofia-conversa-apagar,
+    .sofia-copiar,
+    .sofia-ouvir {
+        opacity: 1;
+    }
+
+    /* Na gravação o pulso e o tempo já contam o que está havendo; na conversa
+       por voz o rótulo é a única pista do estado, então ele fica. */
+    .sofia-gravacao .sofia-gravacao-estado {
+        display: none;
+    }
+
+    .sofia-coluna {
+        padding-right: var(--esp-3);
+        padding-left: var(--esp-3);
+    }
+
+    .sofia-modos button {
+        padding: 0 var(--esp-3);
+    }
+
+    .message.user .message-texto {
+        max-width: 90%;
+    }
+}

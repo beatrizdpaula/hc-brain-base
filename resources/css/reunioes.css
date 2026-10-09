@@ -1,0 +1,1209 @@
+/* ==========================================================================
+   TELA REUNIÕES
+   Agenda em quatro blocos: o resumo do recorte, o movimento por dia, o painel
+   de filtros e o histórico — que troca entre lista, cartões e calendário.
+   Etiquetas, pílulas e campos vêm de componentes.css.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   RESUMO DO PERÍODO
+   -------------------------------------------------------------------------- */
+.agenda-resumo {
+    margin-bottom: var(--esp-5);
+}
+
+.agenda-resumo-topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-3);
+}
+
+.agenda-resumo-topo h2 {
+    margin: 0;
+    font-size: var(--texto-md);
+}
+
+.agenda-intervalo {
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+}
+
+.agenda-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--esp-4);
+}
+
+.agenda-stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    padding: var(--esp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-md);
+    background: var(--surface);
+    text-align: left;
+    transition: var(--transicao);
+}
+
+.agenda-stat:hover {
+    border-color: var(--border-forte);
+    background: var(--surface-hover);
+}
+
+/* O cartão acionado é um filtro ligado, então ele fica marcado enquanto o
+   recorte durar — não é um estado de passagem como o hover. */
+.agenda-stat[aria-pressed="true"] {
+    border-color: var(--cor-stat);
+    box-shadow: inset 0 0 0 1px var(--cor-stat);
+}
+
+.agenda-stat-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.agenda-stat-icone {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--raio-sm);
+    background: var(--cor-stat-fundo);
+    color: var(--cor-stat);
+    place-items: center;
+}
+
+.agenda-stat-icone svg {
+    width: 16px;
+    height: 16px;
+}
+
+.agenda-stat-seta {
+    display: grid;
+    color: var(--texto-fraco);
+    place-items: center;
+}
+
+.agenda-stat-seta svg {
+    width: 16px;
+    height: 16px;
+}
+
+.agenda-stat-meio {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--esp-3);
+}
+
+.agenda-stat-valor {
+    color: var(--texto-forte);
+    font-size: var(--texto-3xl);
+    font-weight: var(--peso-forte);
+    line-height: var(--altura-apertada);
+}
+
+.agenda-stat-rotulo {
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    text-align: right;
+}
+
+.agenda-stat-base {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+}
+
+.agenda-stat-detalhe {
+    overflow: hidden;
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-stat-barra {
+    display: flex;
+    overflow: hidden;
+    height: 4px;
+    border-radius: var(--raio-pill);
+    background: var(--surface-alto);
+}
+
+.agenda-stat-barra > span {
+    height: 100%;
+    transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.agenda-stat.roxo {
+    --cor-stat: var(--roxo);
+    --cor-stat-fundo: var(--roxo-fundo);
+}
+
+.agenda-stat.azul {
+    --cor-stat: var(--azul);
+    --cor-stat-fundo: var(--azul-fundo);
+}
+
+.agenda-stat.verde {
+    --cor-stat: var(--verde);
+    --cor-stat-fundo: var(--verde-fundo);
+}
+
+.agenda-stat.vermelho {
+    --cor-stat: var(--vermelho);
+    --cor-stat-fundo: var(--vermelho-fundo);
+}
+
+/* Os três tons das fatias valem na barra do resumo, nas colunas do gráfico e
+   nas bolinhas da legenda. */
+.agenda-stat-barra .azul,
+.agenda-barra-coluna .azul,
+.agenda-legenda .azul::before {
+    background: var(--azul);
+}
+
+.agenda-stat-barra .verde,
+.agenda-barra-coluna .verde,
+.agenda-legenda .verde::before {
+    background: var(--verde);
+}
+
+.agenda-stat-barra .vermelho,
+.agenda-barra-coluna .vermelho,
+.agenda-legenda .vermelho::before {
+    background: var(--vermelho);
+}
+
+/* --------------------------------------------------------------------------
+   MOVIMENTO POR DIA
+   -------------------------------------------------------------------------- */
+.agenda-movimento {
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    gap: var(--esp-6);
+    padding: var(--esp-5);
+    margin-bottom: var(--esp-5);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-md);
+    background: var(--surface);
+}
+
+.agenda-overline {
+    display: block;
+    margin-bottom: var(--esp-1);
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.agenda-movimento-copy h2 {
+    margin: 0 0 var(--esp-2);
+    font-size: var(--texto-lg);
+}
+
+.agenda-movimento-copy p {
+    margin: 0;
+    font-size: var(--texto-sm);
+}
+
+.agenda-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-3);
+    padding: 0;
+    margin: var(--esp-4) 0 0;
+    list-style: none;
+}
+
+.agenda-legenda li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+}
+
+.agenda-legenda li::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    content: "";
+}
+
+.agenda-grafico {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--esp-3);
+    padding-bottom: var(--esp-2);
+    overflow-x: auto;
+}
+
+.agenda-grafico-vazio {
+    align-self: center;
+    margin: 0;
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+}
+
+.agenda-barra {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--esp-2);
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.agenda-barra-numero {
+    color: var(--texto-suave);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+}
+
+.agenda-barra-coluna {
+    display: flex;
+    flex-direction: column-reverse;
+    overflow: hidden;
+    width: 26px;
+    border-radius: var(--raio-sm);
+    background: var(--surface-alto);
+    transition: var(--transicao);
+}
+
+.agenda-barra:hover .agenda-barra-coluna {
+    opacity: 0.75;
+}
+
+.agenda-barra-dia {
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   PAINEL DE FILTROS
+   -------------------------------------------------------------------------- */
+.agenda-painel {
+    padding: var(--esp-5);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-md);
+    background: var(--surface);
+}
+
+.agenda-painel-topo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--esp-4);
+    margin-bottom: var(--esp-5);
+}
+
+.agenda-painel-topo h2 {
+    margin: 0 0 var(--esp-1);
+    font-size: var(--texto-lg);
+}
+
+.agenda-painel-topo p {
+    max-width: 48ch;
+    margin: 0;
+    font-size: var(--texto-sm);
+}
+
+/* Os quatro atalhos de período dividem uma trilha só, como um seletor de
+   abas: a escolha é exclusiva e as opções cabem lado a lado. */
+.agenda-segmentado {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-md);
+    background: var(--surface-alto);
+}
+
+.agenda-segmentado button {
+    padding: var(--esp-2) var(--esp-3);
+    border: none;
+    border-radius: var(--raio-sm);
+    background: transparent;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+    white-space: nowrap;
+    transition: var(--transicao);
+}
+
+.agenda-segmentado button:hover {
+    color: var(--texto);
+}
+
+.agenda-segmentado button.active {
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+}
+
+.agenda-filtros {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    align-items: end;
+    gap: var(--esp-3);
+}
+
+.agenda-campo-busca {
+    grid-column: span 2;
+}
+
+.agenda-busca {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    height: 38px;
+    padding: 0 var(--esp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+    background: var(--surface-alto);
+    transition: var(--transicao);
+}
+
+.agenda-busca:hover {
+    border-color: var(--border-forte);
+}
+
+.agenda-busca:focus-within {
+    border-color: var(--roxo);
+    box-shadow: 0 0 0 3px var(--roxo-fundo);
+}
+
+.agenda-busca .search-icon {
+    display: grid;
+    color: var(--texto-suave);
+    place-items: center;
+}
+
+.agenda-busca .search-icon svg {
+    width: 15px;
+    height: 15px;
+}
+
+.agenda-busca input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--texto-forte);
+    font-size: var(--texto-base);
+    outline: none;
+}
+
+/* Quem marca o foco aqui é a moldura inteira, com o ícone dentro; o anel geral
+   de :focus-visible desenharia um segundo contorno só em volta do campo. */
+.agenda-busca input:focus-visible {
+    box-shadow: none;
+}
+
+.agenda-rodape-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    padding: var(--esp-4) 0;
+}
+
+.agenda-contagem {
+    margin: 0;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+}
+
+.agenda-contagem strong {
+    color: var(--texto-forte);
+    font-weight: var(--peso-forte);
+}
+
+.agenda-reset {
+    padding: 0;
+    margin-left: var(--esp-2);
+    border: none;
+    background: transparent;
+    color: var(--roxo-claro);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+}
+
+.agenda-reset:hover {
+    text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   HISTÓRICO EM LISTA
+   -------------------------------------------------------------------------- */
+.agenda-tabela,
+.agenda-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+}
+
+.agenda-tabela-cab,
+.agenda-linha {
+    display: grid;
+    grid-template-columns: 92px minmax(180px, 1fr) 132px 132px 110px 110px 20px;
+    align-items: center;
+    gap: var(--esp-3);
+}
+
+.agenda-tabela-cab {
+    padding: 0 var(--esp-4);
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.agenda-linha {
+    padding: var(--esp-3) var(--esp-4);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cor-linha, var(--border-forte));
+    border-radius: var(--raio-md);
+    background: var(--surface-alto);
+    cursor: pointer;
+    transition: var(--transicao);
+}
+
+.agenda-linha:hover {
+    border-color: var(--border-forte);
+    border-left-color: var(--cor-linha, var(--border-forte));
+    background: var(--surface-hover);
+}
+
+.status-verde {
+    --cor-linha: var(--verde);
+}
+
+.status-azul {
+    --cor-linha: var(--azul);
+}
+
+.status-vermelho {
+    --cor-linha: var(--vermelho);
+}
+
+.agenda-hora {
+    display: block;
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+    font-weight: var(--peso-medio);
+}
+
+.agenda-hora-sub {
+    display: block;
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+}
+
+.agenda-linha-main {
+    min-width: 0;
+}
+
+.agenda-linha-titulo {
+    overflow: hidden;
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+    font-weight: var(--peso-medio);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-linha-motivo {
+    overflow: hidden;
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-pessoa {
+    overflow: hidden;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-seta {
+    display: grid;
+    color: var(--texto-fraco);
+    place-items: center;
+}
+
+.agenda-seta svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Bolinha que antecede o rótulo de tipo e o de status, na cor do próprio
+   rótulo — é o que distingue os dois à distância, antes de ler o texto. */
+.agenda-ponto {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentcolor;
+}
+
+.agenda-tipo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-medio);
+    white-space: nowrap;
+}
+
+.agenda-tipo.green {
+    color: var(--verde);
+}
+
+.agenda-tipo.blue {
+    color: var(--azul);
+}
+
+.agenda-tipo.yellow {
+    color: var(--amarelo);
+}
+
+.agenda-tipo.purple {
+    color: var(--roxo-claro);
+}
+
+.agenda-tipo.red {
+    color: var(--vermelho);
+}
+
+.agenda-tipo.gray {
+    color: var(--texto-suave);
+}
+
+/* --------------------------------------------------------------------------
+   CABEÇALHO DE DIA
+   -------------------------------------------------------------------------- */
+.agenda-dia {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-4) 0 var(--esp-2);
+}
+
+.agenda-dia-pastilha {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--raio-md);
+    background: var(--surface-alto);
+    color: var(--texto-suave);
+}
+
+.agenda-dia-pastilha strong {
+    font-size: var(--texto-md);
+    font-weight: var(--peso-forte);
+    line-height: 1;
+}
+
+.agenda-dia-pastilha small {
+    font-size: var(--texto-xs);
+    text-transform: uppercase;
+}
+
+.agenda-dia.hoje .agenda-dia-pastilha {
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+}
+
+.agenda-dia-texto {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+}
+
+.agenda-dia-texto strong {
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+}
+
+.agenda-dia-texto small {
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+}
+
+.agenda-dia-contagem {
+    flex-shrink: 0;
+    padding: var(--esp-1) var(--esp-3);
+    margin-left: auto;
+    border-radius: var(--raio-pill);
+    background: var(--surface-alto);
+    color: var(--texto-suave);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-medio);
+}
+
+/* --------------------------------------------------------------------------
+   HISTÓRICO EM CARTÕES
+   -------------------------------------------------------------------------- */
+.agenda-cards-grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--esp-3);
+}
+
+.agenda-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+    padding: var(--esp-4);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cor-linha, var(--border-forte));
+    border-radius: var(--raio-md);
+    background: var(--surface-alto);
+    cursor: pointer;
+    transition: var(--transicao);
+}
+
+.agenda-card:hover {
+    border-color: var(--border-forte);
+    border-left-color: var(--cor-linha, var(--border-forte));
+    background: var(--surface-hover);
+}
+
+.agenda-card-topo {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-3);
+}
+
+.agenda-card-hora {
+    flex: none;
+    padding: var(--esp-1) var(--esp-2);
+    border-radius: var(--raio-sm);
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+    font-size: var(--texto-sm);
+    font-weight: var(--peso-forte);
+}
+
+/* Sem horário a pastilha perde a cor: ela deixa de ser o dado principal do
+   cartão e vira só a informação de que o dado não existe. */
+.agenda-card-hora.vazia {
+    background: var(--cinza-fundo);
+    color: var(--texto-fraco);
+    font-weight: var(--peso-medio);
+}
+
+.agenda-card-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.agenda-card-titulo {
+    overflow: hidden;
+    color: var(--texto-forte);
+    font-size: var(--texto-md);
+    font-weight: var(--peso-medio);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-card-motivo {
+    overflow: hidden;
+    color: var(--texto-fraco);
+    font-size: var(--texto-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+}
+
+.agenda-card-meta .agenda-pessoa {
+    margin-left: auto;
+}
+
+/* --------------------------------------------------------------------------
+   CALENDÁRIO
+   -------------------------------------------------------------------------- */
+.meetings-calendar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-4);
+}
+
+.calendar-month-title {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+}
+
+.calendar-month-title strong {
+    color: var(--texto-forte);
+    font-size: var(--texto-lg);
+    font-weight: var(--peso-forte);
+}
+
+.calendar-today {
+    height: 30px;
+    padding: 0 var(--esp-3);
+    font-size: var(--texto-sm);
+}
+
+.calendar-weekdays,
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays span {
+    padding: var(--esp-2);
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.calendar-days {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+}
+
+.calendar-day {
+    position: relative;
+    min-height: 92px;
+    padding: var(--esp-2);
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    cursor: pointer;
+    transition: var(--transicao);
+}
+
+.calendar-day:nth-child(-n + 7) {
+    border-top: none;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day:hover {
+    background: var(--surface-hover);
+}
+
+.calendar-day.muted-day {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.calendar-day-number {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    margin-bottom: var(--esp-1);
+    border-radius: 50%;
+    color: var(--texto-suave);
+    font-size: var(--texto-sm);
+    place-items: center;
+}
+
+.calendar-day.today .calendar-day-number {
+    background: var(--roxo);
+    color: #fff;
+    font-weight: var(--peso-forte);
+}
+
+.calendar-meeting {
+    display: block;
+    padding: 2px var(--esp-2);
+    margin-top: 2px;
+    overflow: hidden;
+    border-radius: var(--raio-sm);
+    font-size: var(--texto-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.calendar-meeting.azul {
+    background: var(--azul-fundo);
+    color: var(--azul);
+}
+
+.calendar-meeting.verde {
+    background: var(--verde-fundo);
+    color: var(--verde);
+}
+
+.calendar-meeting.vermelho {
+    background: var(--vermelho-fundo);
+    color: var(--vermelho);
+}
+
+.calendar-more {
+    display: block;
+    margin-top: 2px;
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+}
+
+/* --------------------------------------------------------------------------
+   MENU DAS JANELAS DO CALENDÁRIO
+   O botão "Calendário" guarda cinco recortes de tempo. Eles saem num menu
+   ancorado ao grupo inteiro, não ao botão, para a borda direita do menu
+   alinhar com a do seletor de visões.
+   -------------------------------------------------------------------------- */
+.agenda-visoes-grupo {
+    position: relative;
+}
+
+.agenda-escala-seta {
+    margin-left: -2px;
+    opacity: 0.6;
+}
+
+.agenda-escala-menu {
+    position: absolute;
+    top: calc(100% + var(--esp-2));
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding: var(--esp-1);
+    border: 1px solid var(--border);
+    border-radius: var(--raio-md);
+    background: var(--surface);
+    box-shadow: var(--sombra-lg);
+}
+
+.agenda-escala-menu button {
+    padding: var(--esp-2) var(--esp-3);
+    border: 0;
+    border-radius: var(--raio-sm);
+    background: transparent;
+    color: var(--texto);
+    font-size: var(--texto-sm);
+    text-align: left;
+    transition: var(--transicao);
+}
+
+.agenda-escala-menu button:hover {
+    background: var(--surface-hover);
+}
+
+.agenda-escala-menu button.atual {
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+    font-weight: var(--peso-medio);
+}
+
+/* --------------------------------------------------------------------------
+   CALENDÁRIO EM COLUNAS (DIA, 4 DIAS E SEMANA)
+   Uma coluna por dia, com as reuniões empilhadas. Não é a grade de horas das
+   agendas tradicionais porque reunião sem horário é a regra nesta base: a
+   grade ficaria quase toda vazia, com tudo amontoado numa faixa de topo.
+   -------------------------------------------------------------------------- */
+.agenda-colunas {
+    grid-template-columns: repeat(var(--colunas, 7), minmax(0, 1fr));
+    min-height: 320px;
+}
+
+.agenda-coluna {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+}
+
+.agenda-coluna:last-child {
+    border-right: none;
+}
+
+.agenda-coluna.hoje {
+    background: var(--roxo-fundo);
+}
+
+.agenda-coluna-cab {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--esp-2);
+    padding: var(--esp-3) var(--esp-2);
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alto);
+    color: var(--texto-suave);
+    font-size: var(--texto-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: var(--transicao);
+}
+
+.agenda-coluna-cab:hover {
+    color: var(--texto-forte);
+}
+
+.agenda-coluna-cab strong {
+    color: var(--texto-forte);
+    font-size: var(--texto-lg);
+    letter-spacing: -0.02em;
+}
+
+.agenda-coluna.hoje .agenda-coluna-cab {
+    background: transparent;
+    color: var(--roxo-claro);
+}
+
+.agenda-coluna.hoje .agenda-coluna-cab strong {
+    color: var(--roxo-claro);
+}
+
+.agenda-coluna-corpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: var(--esp-2);
+}
+
+.agenda-coluna-vazia {
+    padding: var(--esp-4) 0;
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    text-align: center;
+}
+
+/* O evento usa a mesma faixa colorida à esquerda que a lista usa nas linhas,
+   para status se ler igual nas duas visões. */
+.agenda-evento {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--esp-2);
+    border: 0;
+    border-left: 3px solid var(--cor-linha, var(--border-forte));
+    border-radius: var(--raio-sm);
+    background: var(--surface-alto);
+    text-align: left;
+    transition: var(--transicao);
+}
+
+.agenda-evento:hover {
+    background: var(--surface-hover);
+}
+
+.agenda-evento.verde {
+    --cor-linha: var(--verde);
+}
+
+.agenda-evento.azul {
+    --cor-linha: var(--azul);
+}
+
+.agenda-evento.vermelho {
+    --cor-linha: var(--vermelho);
+}
+
+.agenda-evento strong {
+    overflow: hidden;
+    color: var(--texto-forte);
+    font-size: var(--texto-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-evento-hora {
+    color: var(--texto-suave);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+}
+
+.agenda-evento-sem-hora {
+    color: var(--texto-fraco);
+    font-weight: var(--peso-medio);
+}
+
+.agenda-evento-tipo {
+    overflow: hidden;
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   CALENDÁRIO DO ANO
+   Doze miniaturas lado a lado: o ano serve para achar onde houve movimento,
+   então o dia com reunião acende e o número exato fica para o mês.
+   -------------------------------------------------------------------------- */
+.agenda-ano {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--border);
+}
+
+.agenda-mini-mes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: var(--esp-3);
+    border: 0;
+    background: var(--surface);
+    text-align: left;
+    transition: var(--transicao);
+}
+
+.agenda-mini-mes:hover {
+    background: var(--surface-hover);
+}
+
+.agenda-mini-titulo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--esp-2);
+}
+
+.agenda-mini-titulo strong {
+    color: var(--texto-forte);
+    font-size: var(--texto-sm);
+}
+
+.agenda-mini-titulo small {
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+}
+
+.agenda-mini-grade {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.agenda-mini-grade span {
+    display: grid;
+    aspect-ratio: 1;
+    border-radius: var(--raio-sm);
+    color: var(--texto-fraco);
+    font-size: 10px;
+    place-items: center;
+}
+
+.agenda-mini-grade span.com-reuniao {
+    background: var(--roxo-fundo);
+    color: var(--roxo-claro);
+    font-weight: var(--peso-forte);
+}
+
+.agenda-mini-grade span.hoje {
+    outline: 1px solid var(--roxo);
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVO
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+    /* As duas últimas colunas são apoio: saem antes do título e do status. */
+    .agenda-tabela-cab,
+    .agenda-linha {
+        grid-template-columns: 84px minmax(160px, 1fr) 124px 124px 20px;
+    }
+
+    .agenda-tabela-cab span:nth-child(5),
+    .agenda-tabela-cab span:nth-child(6),
+    .agenda-linha > div:nth-child(5),
+    .agenda-linha > div:nth-child(6) {
+        display: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .agenda-movimento {
+        grid-template-columns: 1fr;
+        gap: var(--esp-4);
+    }
+
+    .agenda-campo-busca {
+        grid-column: 1 / -1;
+    }
+
+    .calendar-day {
+        min-height: 72px;
+    }
+}
+
+@media (max-width: 760px) {
+    .agenda-painel {
+        padding: var(--esp-4);
+    }
+
+    .agenda-tabela-cab {
+        display: none;
+    }
+
+    .agenda-linha {
+        grid-template-columns: 76px minmax(0, 1fr);
+        row-gap: var(--esp-2);
+    }
+
+    .agenda-linha > div:nth-child(3),
+    .agenda-linha > div:nth-child(4) {
+        grid-column: 2;
+    }
+
+    .agenda-seta {
+        display: none;
+    }
+
+    /* Sete colunas não cabem num celular. Em vez de espremê-las a ponto de
+       nenhum nome de empresa aparecer, a semana passa a rolar na horizontal. */
+    .agenda-colunas {
+        grid-template-columns: repeat(var(--colunas, 7), minmax(132px, 1fr));
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 550px) {
+    .agenda-segmentado {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .calendar-day {
+        min-height: 56px;
+    }
+
+    .calendar-meeting {
+        display: none;
+    }
+}
