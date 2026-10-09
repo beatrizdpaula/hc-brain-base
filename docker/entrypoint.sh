@@ -15,16 +15,16 @@ chmod -R 777 /app/public storage bootstrap/cache database
 # Configura a porta no Apache
 sed -i "s/Listen 80/Listen ${PORT:-10000}/" /etc/apache2/ports.conf
 
-# Atualiza o schema sem apagar nada: o Render reinicia o contêiner sozinho, e
-# um `migrate:fresh` aqui levaria junto tudo o que foi cadastrado pelo site.
+# Atualiza o schema sem apagar nada
 php artisan migrate --force
+
+# Executa o seeder de importação das empresas do ficheiro Excel
+php artisan db:seed --class=ImportEmpresasSeeder --force
 
 # Semeia só se a base estiver vazia e garante o acesso inicial do ambiente.
 php artisan hc:preparar
 
-# O agendador (sincronização de empresas, de hora em hora) roda ao lado do
-# Apache e como o mesmo usuário dele, para que o que ele grava em storage
-# continue acessível ao site.
+# O agendador roda ao lado do Apache
 runuser -u www-data -- php artisan schedule:work &
 
 # Inicia o servidor Apache
