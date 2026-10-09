@@ -19,7 +19,7 @@ sed -i "s/Listen 80/Listen ${PORT:-10000}/" /etc/apache2/ports.conf
 php artisan migrate --force
 
 # Executa o seeder de importação das empresas do ficheiro Excel
-php artisan db:seed --class=ImportEmpresasSeeder --force
+
 
 # Semeia só se a base estiver vazia e garante o acesso inicial do ambiente.
 php artisan hc:preparar
