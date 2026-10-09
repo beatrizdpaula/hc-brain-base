@@ -26,18 +26,17 @@ class ImportEmpresasSeeder extends Seeder
         array_shift($data);
 
         foreach ($data as $row) {
+            // Ignora linhas totalmente vazias
             if (empty($row[0]) && empty($row[1])) {
                 continue;
             }
 
-            // Mapeia os dados da planilha
-            $nomeEmpresa = $row[2] ?? $row[0] ?? 'Empresa Sem Nome';
-            $setorEmpresa = $row[3] ?? 'Geral'; // Define um valor padrão se a coluna estiver vazia
-
+            // Preenche todos os campos com valores seguros para evitar erros de NOT NULL
             DB::table('empresas')->insert([
                 'id'         => (string) Str::uuid(),
-                'nome'       => $nomeEmpresa,
-                'setor'      => $setorEmpresa,
+                'nome'       => $row[2] ?? $row[0] ?? 'Empresa Sem Nome',
+                'setor'      => $row[3] ?? 'Geral',
+                'status'     => $row[4] ?? 'Ativo',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
