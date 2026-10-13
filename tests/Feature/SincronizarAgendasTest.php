@@ -1,0 +1,187 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\ContaGoogle;
+use App\Models\Empresa;
+use App\Models\Reuniao;
+use App\Models\User;
+use Database\Seeders\UsuarioSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+
+/**
+ * O Google é falso aqui: o endpoint de token devolve sempre um token de
+ * acesso e o de eventos devolve o que cada teste monta.
+ */
+class SincronizarAgendasTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const EVENTOS = 'www.googleapis.com/calendar/v3/calendars/primary/events*';
+
+    private const TOKEN = 'oauth2.googleapis.com/token';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['services.google.client_id' => 'cliente', 'services.google.client_secret' => 'segredo']);
+    }
+
+    private function conta(string $email = 'ana@hc.com.br', string $nome = 'Ana HC'): ContaGoogle
+    {
+        return ContaGoogle::create(['email' => $email, 'nome' => $nome, 'refresh_token' => "refresh-{$email}"]);
+    }
+
+    private function empresa(string $id, string $nome, string $emailDoSocio = '—'): Empresa
+    {
+        $empresa = Empresa::create(['id' => $id, 'nome' => $nome, 'setor' => 'Saúde', 'status' => 'Ativo', 'status_tag' => 'green']);
+        $empresa->socio()->create([
+            'nome' => 'Sócia', 'cargo' => 'Sócia', 'email' => $emailDoSocio,
+            'telefone' => '—', 'participacao' => '—', 'desde' => '—',
+        ]);
+
+        return $empresa;
+    }
+
+    /**
+     * @param  array<string, mixed>  $trocas
+     * @return array<string, mixed>
+     */
+    private function evento(string $id, array $trocas = []): array
+    {
+        return [
+            'id' => $id,
+            'status' => 'confirmed',
+            'summary' => 'Conversa',
+            'start' => ['dateTime' => '2026-10-20T17:00:00Z'],
+            'hangoutLink' => "https://meet.google.com/{$id}",
+            ...$trocas,
+        ];
+    }
+
+    public function test_evento_com_meet_vira_reuniao_da_empresa_do_socio_convidado(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $this->empresa('clinica-vida', 'CLINICA VIDA LTDA', 'Helena@Vida.com.br');
+        $this->conta();
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::response(['items' => [
+                $this->evento('abc-defg-hij', [
+                    'summary' => 'Alinhamento mensal',
+                    'attendees' => [
+                        ['email' => 'ana@hc.com.br', 'self' => true],
+                        ['email' => 'helena@vida.com.br', 'displayName' => 'Helena Dias'],
+                        ['email' => 'sala@hc.com.br', 'resource' => true],
+                    ],
+                ]),
+                $this->evento('sem-meet', ['hangoutLink' => null, 'summary' => 'Dentista']),
+            ]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $reuniao = Reuniao::sole();
+        $this->assertSame('clinica-vida', $reuniao->empresa_id);
+        $this->assertSame('Alinhamento', $reuniao->tipo);
+        $this->assertSame('2026-10-20', $reuniao->data->toDateString());
+        $this->assertSame('14:00', $reuniao->horario);
+        $this->assertSame('Ana HC', $reuniao->responsavel);
+        $this->assertSame(['Helena Dias'], $reuniao->participantes);
+        $this->assertSame('Agendada', $reuniao->status);
+        $this->assertSame('https://meet.google.com/abc-defg-hij', $reuniao->link_meet);
+    }
+
+    public function test_sem_socio_convidado_a_empresa_vem_do_titulo_e_sem_pista_fica_sem_empresa(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $this->seed(UsuarioSeeder::class);
+        $this->empresa('clinica-vida', 'CLINICA VIDA LTDA');
+        $this->conta();
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::response(['items' => [
+                $this->evento('com-nome', ['summary' => 'Comercial — Clínica Vida']),
+                $this->evento('sem-pista', ['summary' => 'Papo com prospect', 'start' => ['dateTime' => '2026-10-01T13:00:00Z']]),
+            ]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $comNome = Reuniao::firstWhere('google_evento_id', 'com-nome');
+        $this->assertSame('clinica-vida', $comNome->empresa_id);
+        $this->assertSame('Comercial', $comNome->tipo);
+
+        $semPista = Reuniao::firstWhere('google_evento_id', 'sem-pista');
+        $this->assertNull($semPista->empresa_id);
+        $this->assertSame('Concluída', $semPista->status);
+
+        // A agenda e o modal leem `empresa` de toda reunião, inclusive das sem empresa.
+        $this->actingAs(User::firstOrFail())
+            ->getJson('/api/reunioes')
+            ->assertOk()
+            ->assertJsonFragment(['empresa' => 'Sem empresa', 'empresaId' => null, 'linkMeet' => 'https://meet.google.com/sem-pista']);
+    }
+
+    public function test_rodar_de_novo_segue_o_google_sem_apagar_o_que_a_equipe_registrou(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $this->conta();
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::sequence()
+                ->push(['items' => [$this->evento('abc')]])
+                ->push(['items' => [$this->evento('abc', ['start' => ['dateTime' => '2026-10-22T18:30:00Z']])]])
+                ->push(['items' => [['id' => 'abc', 'status' => 'cancelled']]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+        Reuniao::sole()->update(['resumo' => 'Ata escrita pela equipe', 'decisoes' => ['Renovar contrato']]);
+
+        $this->travel(5)->minutes();
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $reuniao = Reuniao::sole();
+        $this->assertSame('2026-10-22', $reuniao->data->toDateString());
+        $this->assertSame('15:30', $reuniao->horario);
+        $this->assertSame('Ata escrita pela equipe', $reuniao->resumo);
+        $this->assertSame(['Renovar contrato'], $reuniao->decisoes);
+
+        $this->travel(5)->minutes();
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $this->assertSame('Cancelada', Reuniao::sole()->status);
+
+        // Da segunda leitura em diante só vem o que mudou desde a anterior, com folga.
+        Http::assertSent(fn (Request $pedido) => str_contains($pedido->url(), 'calendar/v3')
+            && str_contains(urldecode($pedido->url()), 'updatedMin=2026-10-13T11:55:00'));
+    }
+
+    public function test_conta_com_acesso_revogado_fica_marcada_sem_parar_as_outras(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $revogada = $this->conta('revogada@gmail.com', 'Revogada');
+        $ativa = $this->conta('ativa@gmail.com', 'Ativa');
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::sequence()
+                ->push(['error' => 'invalid_grant'], 400)
+                ->push(['access_token' => 'acesso']),
+            self::EVENTOS => Http::response(['items' => [$this->evento('abc')]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertFailed();
+
+        $this->assertSame('O Google recusou o acesso desta conta: conecte-a de novo.', $revogada->fresh()->erro);
+        $this->assertNull($revogada->fresh()->sincronizada_em);
+        $this->assertNull($ativa->fresh()->erro);
+        $this->assertSame(1, $ativa->reunioes()->count());
+    }
+}
