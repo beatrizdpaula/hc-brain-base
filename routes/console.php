@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('hc:sincronizar-empresas')->hourly()->withoutOverlapping();
+Schedule::command('hc:sincronizar-agendas')->everyFiveMinutes()->withoutOverlapping();

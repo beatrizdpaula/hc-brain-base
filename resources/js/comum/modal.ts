@@ -52,6 +52,7 @@ const MARKUP = `
       </div>
 
       <div class="modal-actions">
+        <a class="secondary" id="meetingModalMeet" target="_blank" rel="noopener noreferrer" hidden>Entrar no Meet</a>
         <button class="secondary" id="meetingModalEditar" hidden>Editar reunião</button>
         <button class="primary" id="meetingModalOk">Fechar</button>
       </div>
@@ -146,6 +147,10 @@ export function openMeetingModal(meeting: Reuniao, aoEditar?: () => void): void 
         closeMeetingModal();
         aoEditar?.();
     };
+
+    const meet = porId<HTMLAnchorElement>("meetingModalMeet");
+    meet.hidden = meeting.linkMeet === null;
+    meet.href = meeting.linkMeet ?? "";
 
     porId("meetingModalEmpresa").textContent = `Reunião • ${meeting.empresa}`;
     porId("meetingModalTitle").textContent = `Reunião de ${meeting.tipo}`;

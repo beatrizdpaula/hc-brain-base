@@ -78,10 +78,12 @@ function preencherOpcoes(): void {
         });
     };
 
-    repovoar(
-        empresaFilter,
-        empresas.map(({ nome }) => nome),
-    );
+    repovoar(empresaFilter, [
+        ...(meetingsData.some(({ empresaId }) => empresaId === null)
+            ? ["Sem empresa"]
+            : []),
+        ...empresas.map(({ nome }) => nome),
+    ]);
 
     // Os responsáveis não têm cadastro próprio; a lista sai das reuniões
     // existentes, que é exatamente o conjunto que o filtro consegue achar.
@@ -998,8 +1000,15 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "empresaId",
                 rotulo: "Empresa",
                 tipo: "selecao",
-                valor: reuniao?.empresaId,
-                opcoes: empresas.map(({ id, nome }) => ({ valor: id, rotulo: nome })),
+                valor: reuniao ? (reuniao.empresaId ?? "") : undefined,
+                // A reunião trazida do Google sem empresa abre pedindo a escolha,
+                // em vez de já mostrar a primeira da lista como se fosse dela.
+                opcoes: [
+                    ...(reuniao && reuniao.empresaId === null
+                        ? [{ valor: "", rotulo: "Escolha a empresa" }]
+                        : []),
+                    ...empresas.map(({ id, nome }) => ({ valor: id, rotulo: nome })),
+                ],
             },
             {
                 nome: "tipo",

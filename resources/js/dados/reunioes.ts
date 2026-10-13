@@ -12,8 +12,9 @@ export type StatusReuniao = "Concluída" | "Agendada" | "Cancelada";
 
 export interface Reuniao {
     id: number;
+    /** "Sem empresa" quando veio do Google Agenda sem pista de quem é. */
     empresa: string;
-    empresaId: string;
+    empresaId: string | null;
     /** Sócio responsável da empresa, mostrado no modal da reunião. */
     socio: string | null;
     tipo: TipoReuniao;
@@ -27,6 +28,8 @@ export interface Reuniao {
     decisoes: string[];
     proximosPassos: string[];
     status: StatusReuniao;
+    /** Só as reuniões trazidas do Google Agenda têm link do Meet. */
+    linkMeet: string | null;
 }
 
 /** A empresa como o filtro e o cadastro precisam dela: nome para ler, id para gravar. */

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'empresa_id', 'tipo', 'data', 'horario', 'responsavel',
     'participantes', 'resumo', 'decisoes', 'proximos_passos', 'status',
+    'conta_google_id', 'google_evento_id', 'link_meet',
 ])]
 class Reuniao extends Model
 {
@@ -17,6 +18,8 @@ class Reuniao extends Model
     public const TIPOS = ['Abertura', 'Transferência', 'Dúvidas', 'Comercial', 'Alinhamento', 'Financeira'];
 
     public const STATUS = ['Concluída', 'Agendada', 'Cancelada'];
+
+    public const SEM_EMPRESA = 'Sem empresa';
 
     protected function casts(): array
     {
@@ -31,5 +34,16 @@ class Reuniao extends Model
     public function empresa(): BelongsTo
     {
         return $this->belongsTo(Empresa::class);
+    }
+
+    public function contaGoogle(): BelongsTo
+    {
+        return $this->belongsTo(ContaGoogle::class);
+    }
+
+    /** Reunião vinda do Google Agenda pode ainda não estar ligada a uma empresa. */
+    public function nomeDaEmpresa(): string
+    {
+        return $this->empresa?->nome ?? self::SEM_EMPRESA;
     }
 }
