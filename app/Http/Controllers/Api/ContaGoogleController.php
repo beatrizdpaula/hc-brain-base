@@ -8,6 +8,7 @@ use App\Support\GoogleAgenda;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Artisan;
 
 class ContaGoogleController extends Controller
 {
@@ -24,6 +25,19 @@ class ContaGoogleController extends Controller
                 'erro' => $conta->erro,
             ]),
         ]);
+    }
+
+    /**
+     * Lê as agendas na hora, sem esperar o agendador — que no Render para
+     * quando a instância hiberna. Falhas ficam gravadas em cada conta.
+     */
+    public function sincronizar(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->ehAdministrador(), 403, 'Só um administrador sincroniza as agendas do Google.');
+
+        Artisan::call('hc:sincronizar-agendas');
+
+        return $this->index();
     }
 
     /** As reuniões que vieram desta agenda ficam no histórico, só perdem o vínculo. */

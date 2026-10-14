@@ -98,7 +98,10 @@
             Os eventos com Meet destas agendas entram em Reuniões a cada 5 minutos.
           </p>
         </div>
-        <a class="primary" id="conectarAgenda" href="{{ route('google.conectar') }}">Conectar conta Google</a>
+        <div class="page-header-actions">
+          <button type="button" class="secondary" id="sincronizarAgendas" hidden>Sincronizar agora</button>
+          <a class="primary" id="conectarAgenda" href="{{ route('google.conectar') }}">Conectar conta Google</a>
+        </div>
       </div>
       <div id="agendasGoogleLista"></div>
     </div>

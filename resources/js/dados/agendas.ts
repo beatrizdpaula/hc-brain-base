@@ -4,7 +4,7 @@
    por isso é um link no Blade e não uma chamada da API.
    ========================================================= */
 
-import { obter, remover } from "../comum/api.ts";
+import { enviar, obter, remover } from "../comum/api.ts";
 
 export interface ContaGoogle {
     id: number;
@@ -24,6 +24,11 @@ export interface AgendasGoogle {
 
 export function carregarAgendas(): Promise<AgendasGoogle> {
     return obter<AgendasGoogle>("/agendas-google");
+}
+
+/** Lê as agendas na hora e devolve como ficaram, com o erro de cada conta se houver. */
+export function sincronizarAgendas(): Promise<AgendasGoogle> {
+    return enviar<AgendasGoogle>("/agendas-google/sincronizar", {});
 }
 
 export function desconectarAgenda(id: number): Promise<void> {

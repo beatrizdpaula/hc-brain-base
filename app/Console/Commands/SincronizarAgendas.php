@@ -10,9 +10,11 @@ use App\Support\GoogleAgenda;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Traz para a agenda do HC Brain os eventos com Meet das contas Google
@@ -34,6 +36,8 @@ class SincronizarAgendas extends Command
     /** Folga contra o relógio do Google e o do servidor não baterem. */
     private const MARGEM_EM_MINUTOS = 5;
 
+    private const TRAVA_EM_SEGUNDOS = 600;
+
     private const TIPO_PADRAO = 'Alinhamento';
 
     /** Terminações que não ajudam a reconhecer a empresa no título do evento. */
@@ -47,12 +51,6 @@ class SincronizarAgendas extends Command
 
     public function handle(): int
     {
-        if (! GoogleAgenda::configurada()) {
-            $this->components->warn('GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET não estão definidos: nenhuma agenda para ler.');
-
-            return self::SUCCESS;
-        }
-
         $contas = ContaGoogle::all();
 
         if ($contas->isEmpty()) {
@@ -61,9 +59,33 @@ class SincronizarAgendas extends Command
             return self::SUCCESS;
         }
 
-        $this->carregarEmpresas();
+        // Sem o cliente OAuth nenhuma conta é lida; a tela precisa dizer isso
+        // em vez de ficar aguardando a primeira leitura para sempre.
+        if (! GoogleAgenda::configurada()) {
+            $mensagem = 'GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET não estão definidos no servidor.';
+            ContaGoogle::query()->update(['erro' => $mensagem]);
+            $this->components->error($mensagem);
 
-        $falhas = $contas->reject(fn (ContaGoogle $conta) => $this->sincronizar($conta))->count();
+            return self::FAILURE;
+        }
+
+        // A trava expira sozinha: uma leitura interrompida no meio, como num
+        // reinício do contêiner, não impede as próximas.
+        $trava = Cache::lock('hc:sincronizar-agendas', self::TRAVA_EM_SEGUNDOS);
+
+        if (! $trava->get()) {
+            $this->components->info('Já há uma leitura das agendas em andamento.');
+
+            return self::SUCCESS;
+        }
+
+        try {
+            $this->carregarEmpresas();
+
+            $falhas = $contas->reject(fn (ContaGoogle $conta) => $this->sincronizar($conta))->count();
+        } finally {
+            $trava->release();
+        }
 
         return $falhas === 0 ? self::SUCCESS : self::FAILURE;
     }
@@ -84,8 +106,27 @@ class SincronizarAgendas extends Command
             return $this->falhou($conta, $erro->getMessage());
         } catch (HttpClientException) {
             return $this->falhou($conta, 'O Google não respondeu. A próxima sincronização tenta de novo.');
+        } catch (Throwable $erro) {
+            return $this->falhouSemExplicacao($conta, $erro);
         }
 
+        try {
+            $contagem = $this->gravarEventos($conta, $eventos, $inicio);
+        } catch (Throwable $erro) {
+            return $this->falhouSemExplicacao($conta, $erro);
+        }
+
+        $this->components->info("{$conta->email}: {$contagem['nova']} novas e {$contagem['atualizada']} atualizadas.");
+
+        return true;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $eventos
+     * @return array{nova: int, atualizada: int}
+     */
+    private function gravarEventos(ContaGoogle $conta, array $eventos, Carbon $inicio): array
+    {
         $existentes = $conta->reunioes()
             ->whereIn('google_evento_id', array_column($eventos, 'id'))
             ->get()
@@ -105,9 +146,7 @@ class SincronizarAgendas extends Command
             $conta->update(['sincronizada_em' => $inicio, 'erro' => null]);
         });
 
-        $this->components->info("{$conta->email}: {$contagem['nova']} novas e {$contagem['atualizada']} atualizadas.");
-
-        return true;
+        return $contagem;
     }
 
     private function falhou(ContaGoogle $conta, string $mensagem): bool
@@ -116,6 +155,14 @@ class SincronizarAgendas extends Command
         $this->components->error("{$conta->email}: {$mensagem}");
 
         return false;
+    }
+
+    /** O detalhe vai para o log; a tela mostra o bastante para saber que algo quebrou. */
+    private function falhouSemExplicacao(ContaGoogle $conta, Throwable $erro): bool
+    {
+        report($erro);
+
+        return $this->falhou($conta, Str::limit('A leitura da agenda falhou: '.$erro->getMessage(), 250));
     }
 
     /**

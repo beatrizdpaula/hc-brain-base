@@ -100,6 +100,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/usuarios/{usuario}', [Api\UsuarioController::class, 'destroy']);
 
         Route::get('/agendas-google', [Api\ContaGoogleController::class, 'index']);
+        Route::post('/agendas-google/sincronizar', [Api\ContaGoogleController::class, 'sincronizar']);
         Route::delete('/agendas-google/{contaGoogle}', [Api\ContaGoogleController::class, 'destroy']);
 
         Route::post('/pastas', [Api\PastaController::class, 'store']);

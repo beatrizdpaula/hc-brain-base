@@ -15,8 +15,10 @@ import {
 import {
     carregarAgendas,
     desconectarAgenda,
+    sincronizarAgendas,
     type AgendasGoogle,
 } from "../dados/agendas.ts";
+import { ErroDeApi } from "../comum/api.ts";
 import { combina, termoDeBusca } from "../comum/busca.ts";
 import { campo, dado, porId, selecao, todos } from "../comum/dom.ts";
 import { atualizarSecao, observarEstado, obterSecao } from "../comum/estado.ts";
@@ -245,6 +247,7 @@ const RETORNOS_DO_GOOGLE: Record<string, [string, string]> = {
 function renderAgendas({ configurada, contas }: AgendasGoogle): void {
     const lista = porId("agendasGoogleLista");
     porId("conectarAgenda").hidden = !configurada;
+    porId("sincronizarAgendas").hidden = !configurada || contas.length === 0;
 
     if (!configurada) {
         lista.innerHTML = `<div class="empty-state">Defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no ambiente para conectar agendas.</div>`;
@@ -309,6 +312,26 @@ function renderAgendas({ configurada, contas }: AgendasGoogle): void {
 if (usuarioLogado().perfil === "Administrador") {
     porId("agendasGoogle").hidden = false;
     renderAgendas(await carregarAgendas());
+
+    const sincronizar = porId<HTMLButtonElement>("sincronizarAgendas");
+    sincronizar.addEventListener("click", async () => {
+        sincronizar.disabled = true;
+        sincronizar.textContent = "Sincronizando…";
+
+        try {
+            renderAgendas(await sincronizarAgendas());
+        } catch (erro) {
+            showModal(
+                "Não foi possível sincronizar",
+                erro instanceof ErroDeApi
+                    ? erro.message
+                    : "Tente de novo em alguns minutos.",
+            );
+        } finally {
+            sincronizar.disabled = false;
+            sincronizar.textContent = "Sincronizar agora";
+        }
+    });
 
     const retorno = new URLSearchParams(window.location.search).get("google");
     const aviso = retorno ? RETORNOS_DO_GOOGLE[retorno] : undefined;

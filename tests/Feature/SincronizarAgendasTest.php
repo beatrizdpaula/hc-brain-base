@@ -184,4 +184,35 @@ class SincronizarAgendasTest extends TestCase
         $this->assertNull($ativa->fresh()->erro);
         $this->assertSame(1, $ativa->reunioes()->count());
     }
+
+    public function test_falha_inesperada_ao_gravar_fica_registrada_na_conta_e_nada_e_gravado_pela_metade(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $conta = $this->conta();
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::response(['items' => [
+                $this->evento('boa'),
+                $this->evento('quebrada', ['start' => ['dateTime' => 'data-que-nao-existe']]),
+            ]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertFailed();
+
+        $this->assertStringStartsWith('A leitura da agenda falhou:', $conta->fresh()->erro);
+        $this->assertNull($conta->fresh()->sincronizada_em);
+        $this->assertSame(0, Reuniao::count());
+    }
+
+    public function test_sem_credenciais_no_servidor_as_contas_mostram_o_motivo(): void
+    {
+        config(['services.google.client_id' => null]);
+        $conta = $this->conta();
+        Http::preventStrayRequests();
+
+        $this->artisan('hc:sincronizar-agendas')->assertFailed();
+
+        $this->assertSame('GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET não estão definidos no servidor.', $conta->fresh()->erro);
+    }
 }

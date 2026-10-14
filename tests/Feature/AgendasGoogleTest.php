@@ -76,6 +76,28 @@ class AgendasGoogleTest extends TestCase
         $this->assertDatabaseCount('contas_google', 0);
     }
 
+    public function test_sincronizar_agora_le_as_agendas_na_hora_so_para_administrador(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        ContaGoogle::create(['email' => 'ana@gmail.com', 'nome' => 'Ana', 'refresh_token' => 'refresh']);
+        Http::preventStrayRequests();
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'acesso']),
+            'www.googleapis.com/calendar/v3/*' => Http::response(['items' => []]),
+        ]);
+
+        $this->actingAs($this->usuario('Colaborador'))
+            ->postJson('/api/agendas-google/sincronizar')
+            ->assertForbidden();
+        Http::assertNothingSent();
+
+        $this->actingAs($this->usuario('Administrador'))
+            ->postJson('/api/agendas-google/sincronizar')
+            ->assertOk()
+            ->assertJsonPath('contas.0.sincronizadaEm', '13/10/2026 09:00')
+            ->assertJsonPath('contas.0.erro', null);
+    }
+
     public function test_desconectar_mantem_as_reunioes_que_vieram_da_agenda(): void
     {
         $conta = ContaGoogle::create(['email' => 'ana@gmail.com', 'nome' => 'Ana', 'refresh_token' => 'refresh']);
