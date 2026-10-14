@@ -26,9 +26,14 @@ export function carregarAgendas(): Promise<AgendasGoogle> {
     return obter<AgendasGoogle>("/agendas-google");
 }
 
-/** Lê as agendas na hora e devolve como ficaram, com o erro de cada conta se houver. */
-export function sincronizarAgendas(): Promise<AgendasGoogle> {
-    return enviar<AgendasGoogle>("/agendas-google/sincronizar", {});
+export interface LeituraDasAgendas extends AgendasGoogle {
+    /** Uma linha por conta: eventos lidos, quantos têm Meet e o que virou reunião. */
+    relatorio: string[];
+}
+
+/** Relê as agendas inteiras na hora e devolve como ficaram e o que cada uma trouxe. */
+export function sincronizarAgendas(): Promise<LeituraDasAgendas> {
+    return enviar<LeituraDasAgendas>("/agendas-google/sincronizar", {});
 }
 
 export function desconectarAgenda(id: number): Promise<void> {

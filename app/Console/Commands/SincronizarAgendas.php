@@ -25,7 +25,8 @@ use Throwable;
  */
 class SincronizarAgendas extends Command
 {
-    protected $signature = 'hc:sincronizar-agendas';
+    protected $signature = 'hc:sincronizar-agendas
+        {--completa : Relê a janela inteira, não só o que mudou desde a última leitura}';
 
     protected $description = 'Traz as reuniões com Meet das agendas Google conectadas';
 
@@ -100,7 +101,7 @@ class SincronizarAgendas extends Command
                 $token,
                 $inicio->copy()->subDays(self::DIAS_PARA_TRAS),
                 $inicio->copy()->addDays(self::DIAS_PARA_FRENTE),
-                $conta->sincronizada_em?->copy()->subMinutes(self::MARGEM_EM_MINUTOS),
+                $this->option('completa') ? null : $conta->sincronizada_em?->copy()->subMinutes(self::MARGEM_EM_MINUTOS),
             );
         } catch (RuntimeException $erro) {
             return $this->falhou($conta, $erro->getMessage());
@@ -116,7 +117,17 @@ class SincronizarAgendas extends Command
             return $this->falhouSemExplicacao($conta, $erro);
         }
 
-        $this->components->info("{$conta->email}: {$contagem['nova']} novas e {$contagem['atualizada']} atualizadas.");
+        // Quantos eventos vieram e quantos têm Meet explica uma leitura que
+        // deu certo mas não trouxe reunião nenhuma.
+        $comMeet = count(array_filter(
+            $eventos,
+            fn (array $evento) => ($evento['status'] ?? null) !== 'cancelled' && $this->linkDoMeet($evento) !== null,
+        ));
+
+        $this->components->info(sprintf(
+            '%s: %d eventos lidos, %d com Meet — %d novas e %d atualizadas.',
+            $conta->email, count($eventos), $comMeet, $contagem['nova'], $contagem['atualizada'],
+        ));
 
         return true;
     }

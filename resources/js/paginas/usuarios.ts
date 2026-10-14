@@ -319,7 +319,9 @@ if (usuarioLogado().perfil === "Administrador") {
         sincronizar.textContent = "Sincronizando…";
 
         try {
-            renderAgendas(await sincronizarAgendas());
+            const leitura = await sincronizarAgendas();
+            renderAgendas(leitura);
+            showModal("Leitura das agendas", leitura.relatorio.join(" "));
         } catch (erro) {
             showModal(
                 "Não foi possível sincronizar",
