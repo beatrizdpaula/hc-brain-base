@@ -7,6 +7,7 @@ use App\Models\Empresa;
 use App\Models\Reuniao;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -76,14 +77,17 @@ class AgendasGoogleTest extends TestCase
         $this->assertDatabaseCount('contas_google', 0);
     }
 
-    public function test_sincronizar_agora_le_as_agendas_na_hora_so_para_administrador(): void
+    public function test_sincronizar_agora_rele_a_agenda_inteira_e_conta_o_que_trouxe_so_para_administrador(): void
     {
         $this->travelTo('2026-10-13 12:00:00');
-        ContaGoogle::create(['email' => 'ana@gmail.com', 'nome' => 'Ana', 'refresh_token' => 'refresh']);
+        ContaGoogle::create(['email' => 'ana@gmail.com', 'nome' => 'Ana', 'refresh_token' => 'refresh', 'sincronizada_em' => '2026-10-13 11:00:00']);
         Http::preventStrayRequests();
         Http::fake([
             'oauth2.googleapis.com/token' => Http::response(['access_token' => 'acesso']),
-            'www.googleapis.com/calendar/v3/*' => Http::response(['items' => []]),
+            'www.googleapis.com/calendar/v3/*' => Http::response(['items' => [
+                ['id' => 'com-meet', 'status' => 'confirmed', 'summary' => 'Conversa', 'start' => ['dateTime' => '2026-10-20T17:00:00Z'], 'hangoutLink' => 'https://meet.google.com/abc'],
+                ['id' => 'sem-meet', 'status' => 'confirmed', 'summary' => 'Dentista', 'start' => ['dateTime' => '2026-10-21T17:00:00Z']],
+            ]]),
         ]);
 
         $this->actingAs($this->usuario('Colaborador'))
@@ -95,7 +99,11 @@ class AgendasGoogleTest extends TestCase
             ->postJson('/api/agendas-google/sincronizar')
             ->assertOk()
             ->assertJsonPath('contas.0.sincronizadaEm', '13/10/2026 09:00')
-            ->assertJsonPath('contas.0.erro', null);
+            ->assertJsonPath('contas.0.erro', null)
+            ->assertJsonPath('relatorio.0', 'ana@gmail.com: 2 eventos lidos, 1 com Meet — 1 novas e 0 atualizadas.');
+
+        Http::assertNotSent(fn (Request $pedido) => str_contains($pedido->url(), 'updatedMin'));
+        $this->assertSame(1, Reuniao::count());
     }
 
     public function test_desconectar_mantem_as_reunioes_que_vieram_da_agenda(): void
