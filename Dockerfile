@@ -25,6 +25,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     docker-php-ext-install \
         pdo_sqlite \
         pdo_pgsql \
+        pdo_mysql \
         bcmath \
         intl \
         zip \
