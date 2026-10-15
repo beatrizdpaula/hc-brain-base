@@ -7,7 +7,6 @@
    ========================================================= */
 
 import {
-    cadastrarReuniao,
     carregarReunioes,
     excluirReuniao,
     salvarReuniao,
@@ -25,12 +24,13 @@ import {
     observarEstado,
     obterSecao,
     type EscalaCalendario,
+    type EstadoReunioes,
     type VisualizacaoAgenda,
 } from "../comum/estado.ts";
 import { dataCurta, escapar, mesPorExtenso, plural } from "../comum/formato.ts";
 import { abrirFormulario } from "../comum/formulario.ts";
 import { desenharIcones, icone, type NomeDeIcone } from "../comum/icones.ts";
-import { openMeetingModal, showModal } from "../comum/modal.ts";
+import { openMeetingModal } from "../comum/modal.ts";
 import { iniciarPagina } from "../comum/shell.ts";
 
 iniciarPagina("reunioes");
@@ -52,6 +52,15 @@ const deCampo = campo("meetingFrom");
 const ateCampo = campo("meetingTo");
 
 let { reunioes: meetingsData, empresas } = await carregarReunioes();
+
+/** Os filtros da lista, menos o período, cada um no seu "todos". */
+const SEM_FILTROS = {
+    busca: "",
+    tipo: "Todas",
+    empresa: "Todas",
+    status: "Todos",
+    responsavel: "Todos",
+} satisfies Partial<EstadoReunioes>;
 
 /** Cor da etiqueta de cada status, reaproveitada na barra e na legenda. */
 const CLASSE_DO_STATUS: Record<StatusReuniao, string> = {
@@ -903,15 +912,7 @@ porId("meetingViewToggle").addEventListener("click", (evento) => {
 });
 
 porId("clearMeetingFilters").addEventListener("click", () => {
-    atualizarSecao("reunioes", {
-        busca: "",
-        tipo: "Todas",
-        empresa: "Todas",
-        status: "Todos",
-        responsavel: "Todos",
-        de: "",
-        ate: "",
-    });
+    atualizarSecao("reunioes", { ...SEM_FILTROS, de: "", ate: "" });
 });
 
 porId("calendarPrev").addEventListener("click", () => deslocarJanela(escalaAtual(), -1));
@@ -941,10 +942,17 @@ calendario.addEventListener("click", (evento) => {
         return;
     }
 
+    // O calendário mostra todas as reuniões, sem filtro; o dia aberto nele
+    // precisa listar as mesmas, não só as que passam num filtro esquecido.
     const dia = alvoMaisProximo(evento, "[data-recortar-dia]");
     if (dia) {
         const iso = dado(dia, "recortarDia");
-        atualizarSecao("reunioes", { de: iso, ate: iso, visualizacao: "list" });
+        atualizarSecao("reunioes", {
+            ...SEM_FILTROS,
+            de: iso,
+            ate: iso,
+            visualizacao: "list",
+        });
     }
 });
 
@@ -983,31 +991,19 @@ document.addEventListener("keydown", (evento) => {
 });
 
 /**
- * O mesmo formulário registra e edita: os campos são os mesmos, muda só se já
- * existe uma reunião por trás. `reuniao` ausente é um registro novo.
+ * As reuniões chegam das agendas Google; aqui só se completa o que o convite
+ * não diz, como a empresa, o tipo e o que foi decidido.
  */
-function abrirFormularioDe(reuniao?: Reuniao): void {
-    if (!empresas.length) {
-        showModal(
-            "Nenhuma empresa cadastrada",
-            "Toda reunião pertence a uma empresa da carteira. Cadastre a empresa primeiro, em Empresas & clientes.",
-        );
-        return;
-    }
-
+function abrirFormularioDe(reuniao: Reuniao): void {
     void abrirFormulario({
-        titulo: reuniao ? `Reunião de ${reuniao.tipo}` : "Nova reunião",
-        descricao: reuniao
-            ? `${reuniao.empresa} • registrada em ${reuniao.data}.`
-            : "A reunião entra no histórico da empresa e aparece na agenda.",
+        titulo: `Reunião de ${reuniao.tipo}`,
+        descricao: `${reuniao.empresa} • registrada em ${reuniao.data}.`,
         campos: [
             {
                 nome: "empresaId",
                 rotulo: "Empresa",
                 tipo: "selecao",
-                // Reunião nova começa na primeira empresa, como sempre; a que veio
-                // do Google sem empresa abre sem nenhuma, em vez de parecer dela.
-                valor: reuniao ? (reuniao.empresaId ?? "") : empresas[0]?.id,
+                valor: reuniao.empresaId ?? "",
                 opcoes: [
                     { valor: "", rotulo: "Sem empresa (só reunião interna)" },
                     ...empresas.map(({ id, nome }) => ({ valor: id, rotulo: nome })),
@@ -1017,34 +1013,34 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "tipo",
                 rotulo: "Tipo",
                 tipo: "selecao",
-                valor: reuniao?.tipo,
+                valor: reuniao.tipo,
                 opcoes: TIPOS_DE_REUNIAO.map((tipo) => ({ valor: tipo, rotulo: tipo })),
             },
             {
                 nome: "data",
                 rotulo: "Data",
                 tipo: "data",
-                valor: reuniao?.dataOrd,
+                valor: reuniao.dataOrd,
                 obrigatorio: true,
             },
             {
                 nome: "horario",
                 rotulo: "Horário",
                 tipo: "hora",
-                valor: reuniao?.horario ?? "",
+                valor: reuniao.horario ?? "",
                 dica: "Opcional.",
             },
             {
                 nome: "responsavel",
                 rotulo: "Responsável interno",
-                valor: reuniao?.responsavel,
+                valor: reuniao.responsavel,
                 obrigatorio: true,
             },
             {
                 nome: "status",
                 rotulo: "Status",
                 tipo: "selecao",
-                valor: reuniao?.status ?? "Agendada",
+                valor: reuniao.status,
                 opcoes: STATUS_DE_REUNIAO.map((status) => ({
                     valor: status,
                     rotulo: status,
@@ -1054,7 +1050,7 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "participantes",
                 rotulo: "Participantes",
                 tipo: "linhas",
-                valor: reuniao?.participantes.join("\n"),
+                valor: reuniao.participantes.join("\n"),
                 dica: "Um nome por linha.",
                 largo: true,
             },
@@ -1062,7 +1058,7 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "resumo",
                 rotulo: "Resumo",
                 tipo: "longo",
-                valor: reuniao?.resumo,
+                valor: reuniao.resumo,
                 obrigatorio: true,
                 largo: true,
             },
@@ -1070,7 +1066,7 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "decisoes",
                 rotulo: "Decisões tomadas",
                 tipo: "linhas",
-                valor: reuniao?.decisoes.join("\n"),
+                valor: reuniao.decisoes.join("\n"),
                 dica: "Uma por linha.",
                 largo: true,
             },
@@ -1078,23 +1074,21 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "proximosPassos",
                 rotulo: "Próximos passos",
                 tipo: "linhas",
-                valor: reuniao?.proximosPassos.join("\n"),
+                valor: reuniao.proximosPassos.join("\n"),
                 dica: "Um por linha.",
                 largo: true,
             },
         ],
-        confirmar: reuniao ? "Salvar reunião" : "Registrar reunião",
-        excluir: reuniao
-            ? {
-                  rotulo: "Excluir reunião",
-                  confirmacao:
-                      "A reunião sai do histórico da empresa e da agenda. Não há como desfazer.",
-                  aoExcluir: async () => {
-                      await excluirReuniao(reuniao.id);
-                      await recarregar();
-                  },
-              }
-            : undefined,
+        confirmar: "Salvar reunião",
+        excluir: {
+            rotulo: "Excluir reunião",
+            confirmacao:
+                "A reunião sai do histórico da empresa e da agenda. Não há como desfazer.",
+            aoExcluir: async () => {
+                await excluirReuniao(reuniao.id);
+                await recarregar();
+            },
+        },
         aoSalvar: async (valores) => {
             const dados = {
                 empresaId: valores.texto("empresaId"),
@@ -1109,12 +1103,7 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 proximosPassos: valores.linhas("proximosPassos"),
             };
 
-            if (reuniao) {
-                await salvarReuniao(reuniao.id, dados);
-            } else {
-                await cadastrarReuniao(dados);
-            }
-
+            await salvarReuniao(reuniao.id, dados);
             await recarregar();
         },
     });
@@ -1123,16 +1112,49 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
 async function recarregar(): Promise<void> {
     ({ reunioes: meetingsData, empresas } = await carregarReunioes());
     preencherOpcoes();
+    atualizarTela();
+}
+
+/**
+ * Um filtro salvo que a tela não consegue mostrar — empresa ou responsável que
+ * não estão mais na lista, data fora do formato do campo — esconderia reuniões
+ * com todos os controles aparentando "Todos". Ele volta ao padrão.
+ */
+function descartarFiltrosInvisiveis(): boolean {
+    const estado = obterSecao("reunioes");
+    const temOpcao = (seletor: HTMLSelectElement, valor: string): boolean =>
+        [...seletor.options].some((opcao) => opcao.value === valor);
+    const dataValida = (valor: string): boolean =>
+        valor === "" || /^\d{4}-\d{2}-\d{2}$/.test(valor);
+
+    const correcoes: Partial<EstadoReunioes> = {
+        ...(typeof estado.busca === "string" ? {} : { busca: SEM_FILTROS.busca }),
+        ...(temOpcao(tipoFilter, estado.tipo) ? {} : { tipo: SEM_FILTROS.tipo }),
+        ...(temOpcao(empresaFilter, estado.empresa)
+            ? {}
+            : { empresa: SEM_FILTROS.empresa }),
+        ...(temOpcao(statusFilter, estado.status) ? {} : { status: SEM_FILTROS.status }),
+        ...(temOpcao(responsavelFilter, estado.responsavel)
+            ? {}
+            : { responsavel: SEM_FILTROS.responsavel }),
+        ...(dataValida(estado.de) ? {} : { de: "" }),
+        ...(dataValida(estado.ate) ? {} : { ate: "" }),
+    };
+
+    if (!Object.keys(correcoes).length) return false;
+
+    atualizarSecao("reunioes", correcoes);
+    return true;
+}
+
+function atualizarTela(): void {
+    // A correção grava o estado, e o observador redesenha a tela com ele.
+    if (descartarFiltrosInvisiveis()) return;
+
     aplicarEstadoNosControles();
     renderReunioes();
 }
 
-porId("newMeeting").addEventListener("click", () => abrirFormularioDe());
+observarEstado(["reunioes"], atualizarTela);
 
-observarEstado(["reunioes"], () => {
-    aplicarEstadoNosControles();
-    renderReunioes();
-});
-
-aplicarEstadoNosControles();
-renderReunioes();
+atualizarTela();

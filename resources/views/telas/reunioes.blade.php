@@ -17,10 +17,6 @@
           quando precisar.
         </p>
       </div>
-
-      <div class="page-header-actions">
-        <button class="primary" id="newMeeting" type="button">Nova reunião</button>
-      </div>
     </div>
 
     <section class="agenda-resumo" aria-label="Resumo do período">

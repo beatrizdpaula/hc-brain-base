@@ -2,7 +2,7 @@
    REUNIÕES — histórico central, vinculado à empresa e ao sócio
    ========================================================= */
 
-import { atualizar, enviar, obter, remover } from "../comum/api.ts";
+import { atualizar, obter, remover } from "../comum/api.ts";
 import type { CorTag } from "./empresas.ts";
 
 export type TipoReuniao =
@@ -97,11 +97,6 @@ export const STATUS_DE_REUNIAO: StatusReuniao[] = ["Agendada", "Concluída", "Ca
 
 export function carregarReunioes(): Promise<BaseReunioes> {
     return obter<BaseReunioes>("/reunioes");
-}
-
-export async function cadastrarReuniao(dados: DadosDeReuniao): Promise<Reuniao> {
-    const resposta = await enviar<{ data: Reuniao }>("/reunioes", dados);
-    return resposta.data;
 }
 
 export async function salvarReuniao(id: number, dados: DadosDeReuniao): Promise<Reuniao> {
