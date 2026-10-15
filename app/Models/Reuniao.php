@@ -15,7 +15,10 @@ class Reuniao extends Model
 {
     protected $table = 'reunioes';
 
-    public const TIPOS = ['Abertura', 'Transferência', 'Dúvidas', 'Comercial', 'Alinhamento', 'Financeira'];
+    public const TIPOS = ['Abertura', 'Transferência', 'Dúvidas', 'Comercial', 'Alinhamento', 'Financeira', self::INTERNA];
+
+    /** Reunião só da equipe da HC: não é de cliente, então pode ficar sem empresa. */
+    public const INTERNA = 'Interna';
 
     public const STATUS = ['Concluída', 'Agendada', 'Cancelada'];
 
