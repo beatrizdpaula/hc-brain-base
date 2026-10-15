@@ -12,6 +12,13 @@ rm -f bootstrap/cache/*.php
 chown -R www-data:www-data /app/public database storage bootstrap/cache
 chmod -R 777 /app/public storage bootstrap/cache database
 
+# Os Secret Files do Render só o root lê, mas o Apache e o agendador rodam
+# como www-data: o certificado do MySQL vai para um lugar que todos leem.
+if [ -n "$MYSQL_ATTR_SSL_CA" ] && [ -f "$MYSQL_ATTR_SSL_CA" ]; then
+    install -m 644 "$MYSQL_ATTR_SSL_CA" /app/storage/mysql-ca.pem
+    export MYSQL_ATTR_SSL_CA=/app/storage/mysql-ca.pem
+fi
+
 # Configura a porta no Apache
 sed -i "s/Listen 80/Listen ${PORT:-10000}/" /etc/apache2/ports.conf
 
