@@ -6,7 +6,13 @@ import { atualizar, enviar, obter, remover } from "../comum/api.ts";
 import type { CorTag } from "./empresas.ts";
 
 export type TipoReuniao =
-    "Abertura" | "Transferência" | "Dúvidas" | "Comercial" | "Alinhamento" | "Financeira";
+    | "Abertura"
+    | "Transferência"
+    | "Dúvidas"
+    | "Comercial"
+    | "Alinhamento"
+    | "Financeira"
+    | "Interna";
 
 export type StatusReuniao = "Concluída" | "Agendada" | "Cancelada";
 
@@ -66,6 +72,8 @@ export const tagDoTipoDeReuniao: Record<TipoReuniao, CorTag> = {
     Comercial: "purple",
     Alinhamento: "gray",
     Financeira: "red",
+    // Amarelo como o Banana que marca a reunião interna no Google Agenda.
+    Interna: "yellow",
 };
 
 export const tagDoStatus: Record<StatusReuniao, CorTag> = {
@@ -82,6 +90,7 @@ export const TIPOS_DE_REUNIAO: TipoReuniao[] = [
     "Comercial",
     "Alinhamento",
     "Financeira",
+    "Interna",
 ];
 
 export const STATUS_DE_REUNIAO: StatusReuniao[] = ["Agendada", "Concluída", "Cancelada"];

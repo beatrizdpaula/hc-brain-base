@@ -132,6 +132,43 @@ class SincronizarAgendasTest extends TestCase
         $this->assertSame('#9fe1e7', $interna->cor);
     }
 
+    public function test_banana_e_reuniao_interna_sem_empresa_e_salvia_e_abertura(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $this->empresa('clinica-vida', 'Clínica Vida', 'helena@vida.com.br');
+        $this->conta();
+        $socioConvidado = ['attendees' => [['email' => 'helena@vida.com.br']]];
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::sequence()
+                ->push(['items' => [
+                    $this->evento('banana', ['colorId' => '5', ...$socioConvidado]),
+                    $this->evento('salvia', ['colorId' => '2', 'summary' => 'Comercial com a Clínica Vida']),
+                    $this->evento('recolorida', $socioConvidado),
+                ]])
+                ->push(['items' => [$this->evento('recolorida', ['colorId' => '2', ...$socioConvidado])]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $banana = Reuniao::firstWhere('google_evento_id', 'banana');
+        $this->assertSame('Interna', $banana->tipo);
+        $this->assertNull($banana->empresa_id);
+
+        $salvia = Reuniao::firstWhere('google_evento_id', 'salvia');
+        $this->assertSame('Abertura', $salvia->tipo);
+        $this->assertSame('clinica-vida', $salvia->empresa_id);
+
+        $this->assertSame('Alinhamento', Reuniao::firstWhere('google_evento_id', 'recolorida')->tipo);
+
+        // Pintar o evento de Sálvia no Google depois de importado também muda o tipo.
+        $this->travel(5)->minutes();
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $this->assertSame('Abertura', Reuniao::firstWhere('google_evento_id', 'recolorida')->tipo);
+    }
+
     public function test_sem_socio_convidado_a_empresa_vem_do_titulo_e_sem_pista_fica_sem_empresa(): void
     {
         $this->travelTo('2026-10-13 12:00:00');

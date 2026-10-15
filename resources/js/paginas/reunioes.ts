@@ -1005,13 +1005,11 @@ function abrirFormularioDe(reuniao?: Reuniao): void {
                 nome: "empresaId",
                 rotulo: "Empresa",
                 tipo: "selecao",
-                valor: reuniao ? (reuniao.empresaId ?? "") : undefined,
-                // A reunião trazida do Google sem empresa abre pedindo a escolha,
-                // em vez de já mostrar a primeira da lista como se fosse dela.
+                // Reunião nova começa na primeira empresa, como sempre; a que veio
+                // do Google sem empresa abre sem nenhuma, em vez de parecer dela.
+                valor: reuniao ? (reuniao.empresaId ?? "") : empresas[0]?.id,
                 opcoes: [
-                    ...(reuniao && reuniao.empresaId === null
-                        ? [{ valor: "", rotulo: "Escolha a empresa" }]
-                        : []),
+                    { valor: "", rotulo: "Sem empresa (só reunião interna)" },
                     ...empresas.map(({ id, nome }) => ({ valor: id, rotulo: nome })),
                 ],
             },

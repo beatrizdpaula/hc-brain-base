@@ -42,6 +42,15 @@ class SincronizarAgendas extends Command
 
     private const TIPO_PADRAO = 'Alinhamento';
 
+    /**
+     * Cores de evento que a equipe usa no Google Agenda para marcar o tipo da
+     * reunião: Banana para as internas, Sálvia para as de abertura.
+     */
+    private const TIPO_PELA_COR = [
+        '5' => Reuniao::INTERNA,
+        '2' => 'Abertura',
+    ];
+
     /** Terminações que não ajudam a reconhecer a empresa no título do evento. */
     private const SUFIXOS = ['ltda', 'me', 'epp', 'eireli', 'sa', 'ss', 'slu'];
 
@@ -229,13 +238,17 @@ class SincronizarAgendas extends Command
             'cor' => GoogleAgenda::CORES_DOS_EVENTOS[(string) ($evento['colorId'] ?? '')] ?? $this->corDaAgenda,
         ];
 
+        $tipoPelaCor = self::TIPO_PELA_COR[(string) ($evento['colorId'] ?? '')] ?? null;
+
         if ($existente === null) {
+            $tipo = $tipoPelaCor ?? $this->tipoDo($evento);
+
             Reuniao::create([
                 ...$quando,
                 'conta_google_id' => $conta->id,
                 'google_evento_id' => $evento['id'],
-                'empresa_id' => $this->empresaDo($evento),
-                'tipo' => $this->tipoDo($evento),
+                'empresa_id' => $tipo === Reuniao::INTERNA ? null : $this->empresaDo($evento),
+                'tipo' => $tipo,
                 'responsavel' => $conta->nome,
                 'participantes' => $this->participantesDo($evento),
                 'resumo' => $this->resumoDo($evento),
@@ -247,9 +260,14 @@ class SincronizarAgendas extends Command
             return 'nova';
         }
 
+        // A cor que a equipe dá ao evento no Google vale como tipo: trocar a cor
+        // lá troca o tipo aqui. Sem uma dessas cores, o tipo é de quem registra.
+        $tipo = $tipoPelaCor ?? $existente->tipo;
+
         $existente->fill([
             ...$quando,
-            'empresa_id' => $existente->empresa_id ?? $this->empresaDo($evento),
+            'tipo' => $tipo,
+            'empresa_id' => $existente->empresa_id ?? ($tipo === Reuniao::INTERNA ? null : $this->empresaDo($evento)),
             // Desmarcada no Google e remarcada depois volta a valer.
             'status' => $existente->status === 'Cancelada'
                 ? ($momento->isFuture() ? 'Agendada' : 'Concluída')
