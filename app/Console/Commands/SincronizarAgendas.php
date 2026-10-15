@@ -6,6 +6,7 @@ use App\Models\ContaGoogle;
 use App\Models\Empresa;
 use App\Models\Reuniao;
 use App\Models\Socio;
+use App\Models\User;
 use App\Support\GoogleAgenda;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\HttpClientException;
@@ -44,11 +45,30 @@ class SincronizarAgendas extends Command
     /** Terminações que não ajudam a reconhecer a empresa no título do evento. */
     private const SUFIXOS = ['ltda', 'me', 'epp', 'eireli', 'sa', 'ss', 'slu'];
 
+    /**
+     * Domínios de e-mail pessoal: dois sócios com @gmail.com não dizem nada
+     * sobre de qual empresa é a reunião.
+     */
+    private const DOMINIOS_PESSOAIS = [
+        'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.com.br', 'outlook.com', 'outlook.com.br',
+        'live.com', 'msn.com', 'yahoo.com', 'yahoo.com.br', 'icloud.com', 'me.com', 'uol.com.br',
+        'bol.com.br', 'terra.com.br', 'ig.com.br', 'globo.com', 'globomail.com', 'protonmail.com', 'proton.me',
+    ];
+
     /** @var array<string, string> e-mail do sócio => id da empresa */
     private array $empresaPorEmail = [];
 
+    /** @var array<string, string> domínio do e-mail dos sócios => id da empresa */
+    private array $empresaPorDominio = [];
+
+    /** @var array<string, true> domínios da própria HC, que estão em toda reunião */
+    private array $dominiosDaCasa = [];
+
     /** @var array<string, string> nome da empresa já normalizado => id da empresa */
     private array $empresaPorNome = [];
+
+    /** A cor da agenda que está sendo lida, para os eventos sem cor própria. */
+    private ?string $corDaAgenda = null;
 
     public function handle(): int
     {
@@ -97,6 +117,7 @@ class SincronizarAgendas extends Command
 
         try {
             $token = GoogleAgenda::tokenDeAcesso($conta);
+            $this->corDaAgenda = GoogleAgenda::corDaAgenda($token);
             $eventos = GoogleAgenda::eventos(
                 $token,
                 $inicio->copy()->subDays(self::DIAS_PARA_TRAS),
@@ -205,6 +226,7 @@ class SincronizarAgendas extends Command
             'data' => $momento->toDateString(),
             'horario' => isset($evento['start']['dateTime']) ? $momento->format('H:i') : null,
             'link_meet' => $link,
+            'cor' => GoogleAgenda::CORES_DOS_EVENTOS[(string) ($evento['colorId'] ?? '')] ?? $this->corDaAgenda,
         ];
 
         if ($existente === null) {
@@ -281,15 +303,28 @@ class SincronizarAgendas extends Command
 
     /**
      * O e-mail de um convidado que é sócio de uma empresa é a pista mais
-     * segura; sem ele, vale o nome da empresa escrito no título. Na dúvida
-     * entre duas empresas, a reunião fica sem empresa para alguém escolher.
+     * segura; depois vem o domínio do e-mail de um convidado igual ao de um
+     * sócio, que pega quem trabalha na empresa mas não está cadastrado; por
+     * último, o nome da empresa escrito no título. Na dúvida entre duas
+     * empresas, a reunião fica sem empresa para alguém escolher.
      *
      * @param  array<string, mixed>  $evento
      */
     private function empresaDo(array $evento): ?string
     {
-        foreach ($evento['attendees'] ?? [] as $convidado) {
-            $empresa = $this->empresaPorEmail[Str::lower($convidado['email'] ?? '')] ?? null;
+        $emails = collect($evento['attendees'] ?? [])
+            ->reject(fn (array $convidado) => $convidado['resource'] ?? false)
+            ->map(fn (array $convidado) => Str::lower(trim((string) ($convidado['email'] ?? ''))))
+            ->filter();
+
+        foreach ($emails as $email) {
+            if (isset($this->empresaPorEmail[$email])) {
+                return $this->empresaPorEmail[$email];
+            }
+        }
+
+        foreach ($emails as $email) {
+            $empresa = $this->empresaPorDominio[$this->dominioDe($email) ?? ''] ?? null;
 
             if ($empresa !== null) {
                 return $empresa;
@@ -355,9 +390,25 @@ class SincronizarAgendas extends Command
      */
     private function carregarEmpresas(): void
     {
+        $socios = Socio::query()->where('email', 'like', '%@%')->get(['empresa_id', 'email']);
+
         $this->empresaPorEmail = $this->semAmbiguidade(
-            Socio::query()->where('email', 'like', '%@%')->get(['empresa_id', 'email'])
-                ->map(fn (Socio $socio) => [Str::lower(trim($socio->email)), $socio->empresa_id])
+            $socios->map(fn (Socio $socio) => [Str::lower(trim($socio->email)), $socio->empresa_id])
+        );
+
+        // Os domínios da equipe da HC aparecem em quase toda reunião e nunca
+        // apontam para um cliente, mesmo que algum sócio use o mesmo.
+        $this->dominiosDaCasa = User::query()->pluck('email')
+            ->merge(ContaGoogle::query()->pluck('email'))
+            ->map(fn (string $email) => Str::lower(Str::after($email, '@')))
+            ->flip()
+            ->map(fn () => true)
+            ->all();
+
+        $this->empresaPorDominio = $this->semAmbiguidade(
+            $socios
+                ->map(fn (Socio $socio) => [$this->dominioDe(Str::lower(trim($socio->email))), $socio->empresa_id])
+                ->filter(fn (array $par) => $par[0] !== null)
         );
 
         $this->empresaPorNome = $this->semAmbiguidade(
@@ -385,6 +436,18 @@ class SincronizarAgendas extends Command
         }
 
         return array_diff_key($mapa, $ambiguas);
+    }
+
+    /** O domínio do e-mail, ou nulo quando ele não identifica empresa nenhuma. */
+    private function dominioDe(string $email): ?string
+    {
+        $dominio = Str::after($email, '@');
+
+        if ($dominio === $email || $dominio === '' || in_array($dominio, self::DOMINIOS_PESSOAIS, true) || isset($this->dominiosDaCasa[$dominio])) {
+            return null;
+        }
+
+        return $dominio;
     }
 
     private function nomeParaBusca(string $nome): string

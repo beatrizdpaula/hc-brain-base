@@ -31,6 +31,7 @@ class ReuniaoResource extends JsonResource
             'proximosPassos' => $this->proximos_passos,
             'status' => $this->status,
             'linkMeet' => $this->link_meet,
+            'cor' => $this->cor,
         ];
     }
 }

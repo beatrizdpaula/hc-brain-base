@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'empresa_id', 'tipo', 'data', 'horario', 'responsavel',
     'participantes', 'resumo', 'decisoes', 'proximos_passos', 'status',
-    'conta_google_id', 'google_evento_id', 'link_meet',
+    'conta_google_id', 'google_evento_id', 'link_meet', 'cor',
 ])]
 class Reuniao extends Model
 {
