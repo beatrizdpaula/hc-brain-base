@@ -26,7 +26,28 @@ final class GoogleAgenda
 
     private const EVENTOS = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
+    private const AGENDA_PRINCIPAL = 'https://www.googleapis.com/calendar/v3/users/me/calendarList/primary';
+
     private const ESCOPOS = ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/calendar.readonly'];
+
+    /**
+     * As cores que a tela do Google Agenda mostra para cada `colorId` de
+     * evento. A API devolve só o número; os tons antigos que ela documenta não
+     * são os que aparecem para quem usa a agenda.
+     */
+    public const CORES_DOS_EVENTOS = [
+        '1' => '#7986cb', // Lavanda
+        '2' => '#33b679', // Sálvia
+        '3' => '#8e24aa', // Uva
+        '4' => '#e67c73', // Flamingo
+        '5' => '#f6bf26', // Banana
+        '6' => '#f4511e', // Tangerina
+        '7' => '#039be5', // Pavão
+        '8' => '#616161', // Grafite
+        '9' => '#3f51b5', // Mirtilo
+        '10' => '#0b8043', // Manjericão
+        '11' => '#d50000', // Tomate
+    ];
 
     public static function configurada(): bool
     {
@@ -104,6 +125,19 @@ final class GoogleAgenda
         }
 
         return (string) $resposta->throw()->json('access_token');
+    }
+
+    /**
+     * A cor da agenda principal, que é a dos eventos sem cor própria. Sem ela
+     * a reunião só fica com a cor do status, então uma falha aqui não impede
+     * a leitura.
+     */
+    public static function corDaAgenda(string $token): ?string
+    {
+        $resposta = Http::withToken($token)->timeout(15)->get(self::AGENDA_PRINCIPAL);
+        $cor = $resposta->successful() ? $resposta->json('backgroundColor') : null;
+
+        return is_string($cor) && preg_match('/^#[0-9a-f]{6}$/i', $cor) ? strtolower($cor) : null;
     }
 
     /**

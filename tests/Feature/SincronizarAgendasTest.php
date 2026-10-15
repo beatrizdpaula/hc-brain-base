@@ -24,11 +24,14 @@ class SincronizarAgendasTest extends TestCase
 
     private const TOKEN = 'oauth2.googleapis.com/token';
 
+    private const AGENDA = 'www.googleapis.com/calendar/v3/users/me/calendarList/primary';
+
     protected function setUp(): void
     {
         parent::setUp();
 
         config(['services.google.client_id' => 'cliente', 'services.google.client_secret' => 'segredo']);
+        Http::fake([self::AGENDA => Http::response(['backgroundColor' => '#9FE1E7'])]);
     }
 
     private function conta(string $email = 'ana@hc.com.br', string $nome = 'Ana HC'): ContaGoogle
@@ -95,6 +98,38 @@ class SincronizarAgendasTest extends TestCase
         $this->assertSame(['Helena Dias'], $reuniao->participantes);
         $this->assertSame('Agendada', $reuniao->status);
         $this->assertSame('https://meet.google.com/abc-defg-hij', $reuniao->link_meet);
+    }
+
+    public function test_colega_do_socio_liga_pela_empresa_do_dominio_e_a_cor_vem_do_google(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $this->empresa('clinica-vida', 'Clínica Vida', 'helena@vida.com.br');
+        // Um sócio com e-mail no domínio da HC não faz toda reunião da equipe ser dele.
+        $this->empresa('outra', 'Outra Empresa', 'contato@hc.com.br');
+        $this->conta();
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::response(['items' => [
+                $this->evento('cliente', [
+                    'colorId' => '11',
+                    'attendees' => [['email' => 'ana@hc.com.br', 'self' => true], ['email' => 'Joao@Vida.com.br']],
+                ]),
+                $this->evento('interna', [
+                    'attendees' => [['email' => 'ana@hc.com.br', 'self' => true], ['email' => 'pedro@hc.com.br']],
+                ]),
+            ]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $cliente = Reuniao::firstWhere('google_evento_id', 'cliente');
+        $this->assertSame('clinica-vida', $cliente->empresa_id);
+        $this->assertSame('#d50000', $cliente->cor);
+
+        $interna = Reuniao::firstWhere('google_evento_id', 'interna');
+        $this->assertNull($interna->empresa_id);
+        $this->assertSame('#9fe1e7', $interna->cor);
     }
 
     public function test_sem_socio_convidado_a_empresa_vem_do_titulo_e_sem_pista_fica_sem_empresa(): void

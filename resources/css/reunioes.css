@@ -869,6 +869,14 @@
     color: var(--vermelho);
 }
 
+/* A cor do Google pode ser clara ou escura demais para virar texto, então ela
+   fica no fundo suave e na faixa, e o texto segue o tema. */
+.calendar-meeting.cor-google {
+    background: color-mix(in srgb, var(--cor-linha) 22%, transparent);
+    color: var(--texto-forte);
+    box-shadow: inset 3px 0 0 var(--cor-linha);
+}
+
 .calendar-more {
     display: block;
     margin-top: 2px;

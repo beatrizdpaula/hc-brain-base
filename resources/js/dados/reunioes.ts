@@ -30,6 +30,8 @@ export interface Reuniao {
     status: StatusReuniao;
     /** Só as reuniões trazidas do Google Agenda têm link do Meet. */
     linkMeet: string | null;
+    /** A cor do evento no Google Agenda (#rrggbb); sem ela, vale a do status. */
+    cor: string | null;
 }
 
 /** A empresa como o filtro e o cadastro precisam dela: nome para ler, id para gravar. */

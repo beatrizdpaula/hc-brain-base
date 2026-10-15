@@ -331,6 +331,11 @@ function classeDoStatus(reuniao: Reuniao): string {
     return `status-${CLASSE_DO_STATUS[reuniao.status]}`;
 }
 
+/** Reunião vinda do Google pinta a faixa com a cor do evento lá; as outras, com a do status. */
+function estiloDaCor(reuniao: Reuniao): string {
+    return reuniao.cor ? ` style="--cor-linha: ${escapar(reuniao.cor)}"` : "";
+}
+
 function etiquetaDeStatus(reuniao: Reuniao): string {
     return `<span class="tag ${tagDoStatus[reuniao.status]}"><i class="agenda-ponto"></i>${escapar(reuniao.status)}</span>`;
 }
@@ -341,7 +346,7 @@ function etiquetaDeTipo(reuniao: Reuniao): string {
 
 function renderLinha(reuniao: Reuniao): string {
     return `
-    <div class="agenda-linha ${classeDoStatus(reuniao)}" role="button" tabindex="0"
+    <div class="agenda-linha ${classeDoStatus(reuniao)}"${estiloDaCor(reuniao)} role="button" tabindex="0"
          data-meeting-id="${reuniao.id}" data-date-ord="${reuniao.dataOrd}"
          aria-label="Abrir reunião de ${escapar(reuniao.tipo)} com ${escapar(reuniao.empresa)}">
       <div>
@@ -365,7 +370,7 @@ function renderLinha(reuniao: Reuniao): string {
 
 function renderCartao(reuniao: Reuniao): string {
     return `
-    <article class="agenda-card ${classeDoStatus(reuniao)}" role="button" tabindex="0"
+    <article class="agenda-card ${classeDoStatus(reuniao)}"${estiloDaCor(reuniao)} role="button" tabindex="0"
              data-meeting-id="${reuniao.id}"
              aria-label="Abrir reunião de ${escapar(reuniao.tipo)} com ${escapar(reuniao.empresa)}">
       <div class="agenda-card-topo">
@@ -560,7 +565,7 @@ function renderEvento(reuniao: Reuniao): string {
         : `<span class="agenda-evento-sem-hora">Sem horário</span>`;
 
     return `
-    <button type="button" class="agenda-evento ${CLASSE_DO_STATUS[reuniao.status]}"
+    <button type="button" class="agenda-evento ${CLASSE_DO_STATUS[reuniao.status]}"${estiloDaCor(reuniao)}
             data-meeting-id="${reuniao.id}">
       <span class="agenda-evento-hora">${hora}</span>
       <strong>${escapar(reuniao.empresa)}</strong>
@@ -652,7 +657,7 @@ function renderMes(inicio: Date, dias: HTMLElement): void {
             .slice(0, 3)
             .map(
                 (reuniao) =>
-                    `<span class="calendar-meeting ${CLASSE_DO_STATUS[reuniao.status]}">${reuniao.horario || "—"} · ${escapar(reuniao.empresa)}</span>`,
+                    `<span class="calendar-meeting ${reuniao.cor ? "cor-google" : CLASSE_DO_STATUS[reuniao.status]}"${estiloDaCor(reuniao)}>${reuniao.horario || "—"} · ${escapar(reuniao.empresa)}</span>`,
             )
             .join("")}
         ${reunioes.length > 3 ? `<span class="calendar-more">+${plural(reunioes.length - 3, "reunião", "reuniões")}</span>` : ""}
