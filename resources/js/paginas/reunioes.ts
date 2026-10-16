@@ -115,6 +115,35 @@ function paraIso(data: Date): string {
     return `${data.getFullYear()}-${mes}-${dia}`;
 }
 
+/** Horário HH:MM para comparar; sem horário fica no fim do dia. */
+function chaveDeHorario(horario: string | null): string {
+    return horario ?? "99:99";
+}
+
+/** Dentro do dia: da mais cedo para a mais tarde. */
+function ordenarDoDia(reunioes: Reuniao[]): Reuniao[] {
+    return [...reunioes].sort((a, b) =>
+        chaveDeHorario(a.horario).localeCompare(chaveDeHorario(b.horario)),
+    );
+}
+
+/**
+ * Já começou (ou o dia já passou). Sem horário no dia de hoje ainda conta
+ * como por vir — não dá para marcar o horário sem inventar um.
+ */
+function jaPassou(reuniao: Reuniao, agora = new Date()): boolean {
+    const hoje = paraIso(agora);
+    if (reuniao.dataOrd < hoje) {
+        return true;
+    }
+    if (reuniao.dataOrd > hoje || !reuniao.horario) {
+        return false;
+    }
+
+    const [hora, minuto] = reuniao.horario.split(":").map(Number);
+    return hora * 60 + minuto <= agora.getHours() * 60 + agora.getMinutes();
+}
+
 /* ---------------------------------------------------------
    RECORTE
    `recorte` é tudo menos o status, porque são os cartões do
@@ -163,7 +192,7 @@ function agruparPorDia(reunioes: Reuniao[]): [string, Reuniao[]][] {
         return mapa;
     }, {});
 
-    return Object.entries(grupos);
+    return Object.entries(grupos).map(([dia, doDia]) => [dia, ordenarDoDia(doDia)]);
 }
 
 /* ---------------------------------------------------------
@@ -523,10 +552,16 @@ function deslocarJanela(escala: EscalaCalendario, passos: number): void {
 
 /** As reuniões de toda a base indexadas por dia, para o calendário consultar. */
 function reunioesPorDia(): Record<string, Reuniao[]> {
-    return meetingsData.reduce<Record<string, Reuniao[]>>((mapa, reuniao) => {
-        (mapa[reuniao.dataOrd] ||= []).push(reuniao);
-        return mapa;
+    const mapa = meetingsData.reduce<Record<string, Reuniao[]>>((acc, reuniao) => {
+        (acc[reuniao.dataOrd] ||= []).push(reuniao);
+        return acc;
     }, {});
+
+    for (const dia of Object.keys(mapa)) {
+        mapa[dia] = ordenarDoDia(mapa[dia]);
+    }
+
+    return mapa;
 }
 
 function tituloDaJanela(escala: EscalaCalendario, inicio: Date): string {
@@ -568,18 +603,56 @@ function tituloDaJanela(escala: EscalaCalendario, inicio: Date): string {
 }
 
 /** Um evento clicável, igual nas colunas e no mês. */
-function renderEvento(reuniao: Reuniao): string {
+function renderEvento(reuniao: Reuniao, passada = false): string {
     const hora = reuniao.horario
         ? escapar(reuniao.horario)
         : `<span class="agenda-evento-sem-hora">Sem horário</span>`;
+    const classes = [
+        "agenda-evento",
+        CLASSE_DO_STATUS[reuniao.status],
+        passada ? "passada" : "",
+    ]
+        .filter(Boolean)
+        .join(" ");
 
     return `
-    <button type="button" class="agenda-evento ${CLASSE_DO_STATUS[reuniao.status]}"${estiloDaCor(reuniao)}
+    <button type="button" class="${classes}"${estiloDaCor(reuniao)}
             data-meeting-id="${reuniao.id}">
       <span class="agenda-evento-hora">${hora}</span>
       <strong>${escapar(reuniao.empresa)}</strong>
       <span class="agenda-evento-tipo">${escapar(reuniao.tipo)}</span>
     </button>`;
+}
+
+/**
+ * Corpo de um dia nas colunas: ordem cronológica, as que já passaram
+ * apagadas, e no dia de hoje uma linha "Agora" entre o que foi e o que vem.
+ */
+function corpoDaColuna(reunioes: Reuniao[], data: Date, hoje: Date): string {
+    if (!reunioes.length) {
+        return `<p class="agenda-coluna-vazia">Sem reuniões</p>`;
+    }
+
+    if (data.getTime() < hoje.getTime()) {
+        return reunioes.map((reuniao) => renderEvento(reuniao, true)).join("");
+    }
+
+    if (data.getTime() > hoje.getTime()) {
+        return reunioes.map((reuniao) => renderEvento(reuniao, false)).join("");
+    }
+
+    const passadas = reunioes.filter((reuniao) => jaPassou(reuniao));
+    const proximas = reunioes.filter((reuniao) => !jaPassou(reuniao));
+    const separador =
+        passadas.length && proximas.length
+            ? `<div class="agenda-agora" role="separator"><span>Agora</span></div>`
+            : "";
+
+    return (
+        passadas.map((reuniao) => renderEvento(reuniao, true)).join("") +
+        separador +
+        proximas.map((reuniao) => renderEvento(reuniao, false)).join("")
+    );
 }
 
 /** Dia, 4 dias e semana: uma coluna por dia, reuniões empilhadas. */
@@ -607,11 +680,7 @@ function renderColunas(escala: EscalaCalendario, inicio: Date, dias: HTMLElement
           <strong>${data.getDate()}</strong>
         </button>
         <div class="agenda-coluna-corpo">
-          ${
-              reunioes.length
-                  ? reunioes.map(renderEvento).join("")
-                  : `<p class="agenda-coluna-vazia">Sem reuniões</p>`
-          }
+          ${corpoDaColuna(reunioes, data, hoje)}
         </div>
       </div>`;
     }).join("");
@@ -664,10 +733,16 @@ function renderMes(inicio: Date, dias: HTMLElement): void {
         <span class="calendar-day-number">${dia}</span>
         ${reunioes
             .slice(0, 3)
-            .map(
-                (reuniao) =>
-                    `<span class="calendar-meeting ${reuniao.cor ? "cor-google" : CLASSE_DO_STATUS[reuniao.status]}"${estiloDaCor(reuniao)}>${reuniao.horario || "—"} · ${escapar(reuniao.empresa)}</span>`,
-            )
+            .map((reuniao) => {
+                const classes = [
+                    "calendar-meeting",
+                    reuniao.cor ? "cor-google" : CLASSE_DO_STATUS[reuniao.status],
+                    jaPassou(reuniao) ? "passada" : "",
+                ]
+                    .filter(Boolean)
+                    .join(" ");
+                return `<span class="${classes}"${estiloDaCor(reuniao)}>${reuniao.horario || "—"} · ${escapar(reuniao.empresa)}</span>`;
+            })
             .join("")}
         ${reunioes.length > 3 ? `<span class="calendar-more">+${plural(reunioes.length - 3, "reunião", "reuniões")}</span>` : ""}
       </div>`;
