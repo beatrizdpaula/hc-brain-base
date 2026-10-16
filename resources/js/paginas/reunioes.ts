@@ -534,17 +534,16 @@ function guardarAncora(data: Date): void {
     atualizarSecao("reunioes", { ancoraCalendario: paraIso(data) });
 }
 
-/** A segunda-feira da semana que contém a data. */
-function segundaDaSemana(data: Date): Date {
+/** O domingo da semana que contém a data (Dom → Sáb). */
+function domingoDaSemana(data: Date): Date {
     const inicio = meiaNoite(data);
-    const desvio = (inicio.getDay() + 6) % 7;
-    inicio.setDate(inicio.getDate() - desvio);
+    inicio.setDate(inicio.getDate() - inicio.getDay());
     return inicio;
 }
 
 /** Onde a janela começa, que depende da escala. */
 function inicioDaJanela(escala: EscalaCalendario, ancora: Date): Date {
-    if (escala === "semana") return segundaDaSemana(ancora);
+    if (escala === "semana") return domingoDaSemana(ancora);
     if (escala === "mes") return new Date(ancora.getFullYear(), ancora.getMonth(), 1);
     if (escala === "ano") return new Date(ancora.getFullYear(), 0, 1);
     return meiaNoite(ancora);
