@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'empresa_id', 'tipo', 'data', 'horario', 'responsavel',
+    'empresa_id', 'titulo', 'tipo', 'data', 'horario', 'responsavel',
     'participantes', 'resumo', 'decisoes', 'proximos_passos', 'status',
     'conta_google_id', 'google_evento_id', 'link_meet', 'cor',
 ])]
@@ -44,9 +44,18 @@ class Reuniao extends Model
         return $this->belongsTo(ContaGoogle::class);
     }
 
-    /** Reunião vinda do Google Agenda pode ainda não estar ligada a uma empresa. */
+    /**
+     * Com empresa, o nome dela. Sem empresa, o título do evento no Google —
+     * "Sem empresa" só quando não há nenhum dos dois.
+     */
     public function nomeDaEmpresa(): string
     {
-        return $this->empresa?->nome ?? self::SEM_EMPRESA;
+        if ($this->empresa !== null) {
+            return $this->empresa->nome;
+        }
+
+        $titulo = trim((string) $this->titulo);
+
+        return $titulo !== '' ? $titulo : self::SEM_EMPRESA;
     }
 }

@@ -167,9 +167,17 @@ function recorte(): Reuniao[] {
 
     return meetingsData
         .filter((reuniao) => estado.tipo === "Todas" || reuniao.tipo === estado.tipo)
-        .filter(
-            (reuniao) => estado.empresa === "Todas" || reuniao.empresa === estado.empresa,
-        )
+        .filter((reuniao) => {
+            if (estado.empresa === "Todas") {
+                return true;
+            }
+            // Sem empresa o card mostra o título do Google; o filtro agrupa pelo id.
+            if (estado.empresa === "Sem empresa") {
+                return reuniao.empresaId === null;
+            }
+
+            return reuniao.empresa === estado.empresa;
+        })
         .filter(
             (reuniao) =>
                 estado.responsavel === "Todos" ||

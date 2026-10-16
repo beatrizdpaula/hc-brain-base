@@ -236,6 +236,8 @@ class SincronizarAgendas extends Command
             'horario' => isset($evento['start']['dateTime']) ? $momento->format('H:i') : null,
             'link_meet' => $link,
             'cor' => GoogleAgenda::CORES_DOS_EVENTOS[(string) ($evento['colorId'] ?? '')] ?? $this->corDaAgenda,
+            // O nome no Google acompanha renomeações; sem empresa, a agenda usa ele.
+            'titulo' => $this->tituloDo($evento),
         ];
 
         $tipoPelaCor = self::TIPO_PELA_COR[(string) ($evento['colorId'] ?? '')] ?? null;
@@ -391,6 +393,14 @@ class SincronizarAgendas extends Command
             ->filter()
             ->values()
             ->all();
+    }
+
+    /** @param  array<string, mixed>  $evento */
+    private function tituloDo(array $evento): ?string
+    {
+        $titulo = trim((string) ($evento['summary'] ?? ''));
+
+        return $titulo !== '' ? Str::limit($titulo, 255) : null;
     }
 
     /** @param  array<string, mixed>  $evento */
