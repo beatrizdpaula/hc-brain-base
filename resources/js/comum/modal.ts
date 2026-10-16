@@ -53,7 +53,6 @@ const MARKUP = `
 
       <div class="modal-actions">
         <a class="secondary" id="meetingModalMeet" target="_blank" rel="noopener noreferrer" hidden>Entrar no Meet</a>
-        <button class="secondary" id="meetingModalEditar" hidden>Editar reunião</button>
         <button class="primary" id="meetingModalOk">Fechar</button>
       </div>
     </div>
@@ -134,19 +133,9 @@ export function closeModal(): void {
     fechar(modais?.generico);
 }
 
-/**
- * O detalhe de uma reunião. `aoEditar` só é passado pela tela de Reuniões —
- * no detalhe do cliente a reunião é leitura, e o botão nem aparece.
- */
-export function openMeetingModal(meeting: Reuniao, aoEditar?: () => void): void {
+/** O detalhe de uma reunião — só leitura; o cadastro vem das agendas Google. */
+export function openMeetingModal(meeting: Reuniao): void {
     const { reuniao } = garantirModais();
-
-    const editar = porId<HTMLButtonElement>("meetingModalEditar");
-    editar.hidden = aoEditar === undefined;
-    editar.onclick = () => {
-        closeMeetingModal();
-        aoEditar?.();
-    };
 
     const meet = porId<HTMLAnchorElement>("meetingModalMeet");
     meet.hidden = meeting.linkMeet === null;

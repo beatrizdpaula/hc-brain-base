@@ -2,7 +2,7 @@
    REUNIÕES — histórico central, vinculado à empresa e ao sócio
    ========================================================= */
 
-import { atualizar, obter, remover } from "../comum/api.ts";
+import { obter } from "../comum/api.ts";
 import type { CorTag } from "./empresas.ts";
 
 export type TipoReuniao =
@@ -51,20 +51,6 @@ export interface BaseReunioes {
     empresas: EmpresaDaReuniao[];
 }
 
-/** O que o formulário de reunião envia; o id fica fora porque vai na URL. */
-export interface DadosDeReuniao {
-    empresaId: string;
-    tipo: string;
-    data: string;
-    horario: string | null;
-    responsavel: string;
-    status: string;
-    resumo: string;
-    participantes: string[];
-    decisoes: string[];
-    proximosPassos: string[];
-}
-
 export const tagDoTipoDeReuniao: Record<TipoReuniao, CorTag> = {
     Abertura: "green",
     Transferência: "blue",
@@ -82,28 +68,9 @@ export const tagDoStatus: Record<StatusReuniao, CorTag> = {
     Cancelada: "red",
 };
 
-/** Os tipos e os status aceitos, na ordem em que aparecem nos formulários. */
-export const TIPOS_DE_REUNIAO: TipoReuniao[] = [
-    "Abertura",
-    "Transferência",
-    "Dúvidas",
-    "Comercial",
-    "Alinhamento",
-    "Financeira",
-    "Interna",
-];
-
+/** Ordem das fatias no gráfico de movimento por dia. */
 export const STATUS_DE_REUNIAO: StatusReuniao[] = ["Agendada", "Concluída", "Cancelada"];
 
 export function carregarReunioes(): Promise<BaseReunioes> {
     return obter<BaseReunioes>("/reunioes");
-}
-
-export async function salvarReuniao(id: number, dados: DadosDeReuniao): Promise<Reuniao> {
-    const resposta = await atualizar<{ data: Reuniao }>(`/reunioes/${id}`, dados);
-    return resposta.data;
-}
-
-export function excluirReuniao(id: number): Promise<void> {
-    return remover(`/reunioes/${id}`);
 }
