@@ -184,8 +184,8 @@
         </div>
         {{-- A régua de dias da semana só faz sentido sobre a grade do mês. --}}
         <div class="calendar-weekdays" id="calendarWeekdays" aria-hidden="true">
-          <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span>
-          <span>Sex</span><span>Sáb</span><span>Dom</span>
+          <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span>
+          <span>Qui</span><span>Sex</span><span>Sáb</span>
         </div>
         <div class="calendar-days" id="calendarDays"></div>
       </div>

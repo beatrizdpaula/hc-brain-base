@@ -8,12 +8,9 @@
 
 import {
     carregarReunioes,
-    excluirReuniao,
-    salvarReuniao,
     STATUS_DE_REUNIAO,
     tagDoStatus,
     tagDoTipoDeReuniao,
-    TIPOS_DE_REUNIAO,
     type Reuniao,
     type StatusReuniao,
 } from "../dados/reunioes.ts";
@@ -28,7 +25,6 @@ import {
     type VisualizacaoAgenda,
 } from "../comum/estado.ts";
 import { dataCurta, escapar, mesPorExtenso, plural } from "../comum/formato.ts";
-import { abrirFormulario } from "../comum/formulario.ts";
 import { desenharIcones, icone, type NomeDeIcone } from "../comum/icones.ts";
 import { openMeetingModal } from "../comum/modal.ts";
 import { iniciarPagina } from "../comum/shell.ts";
@@ -534,17 +530,16 @@ function guardarAncora(data: Date): void {
     atualizarSecao("reunioes", { ancoraCalendario: paraIso(data) });
 }
 
-/** A segunda-feira da semana que contém a data. */
-function segundaDaSemana(data: Date): Date {
+/** O domingo da semana que contém a data (Dom → Sáb). */
+function domingoDaSemana(data: Date): Date {
     const inicio = meiaNoite(data);
-    const desvio = (inicio.getDay() + 6) % 7;
-    inicio.setDate(inicio.getDate() - desvio);
+    inicio.setDate(inicio.getDate() - inicio.getDay());
     return inicio;
 }
 
 /** Onde a janela começa, que depende da escala. */
 function inicioDaJanela(escala: EscalaCalendario, ancora: Date): Date {
-    if (escala === "semana") return segundaDaSemana(ancora);
+    if (escala === "semana") return domingoDaSemana(ancora);
     if (escala === "mes") return new Date(ancora.getFullYear(), ancora.getMonth(), 1);
     if (escala === "ano") return new Date(ancora.getFullYear(), 0, 1);
     return meiaNoite(ancora);
@@ -706,13 +701,14 @@ function renderMes(inicio: Date, dias: HTMLElement): void {
     const ano = inicio.getFullYear();
     const mes = inicio.getMonth();
     const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-    const indiceSegunda = (new Date(ano, mes, 1).getDay() + 6) % 7;
+    // Mesma ordem da visão Semana: Dom → Sáb (`getDay()` já nasce no domingo).
+    const indiceDomingo = new Date(ano, mes, 1).getDay();
     const diasMesAnterior = new Date(ano, mes, 0).getDate();
     const hoje = meiaNoite(new Date());
     const porDia = reunioesPorDia();
 
     const celulas: CelulaCalendario[] = [];
-    for (let i = indiceSegunda - 1; i >= 0; i--) {
+    for (let i = indiceDomingo - 1; i >= 0; i--) {
         celulas.push({
             dia: diasMesAnterior - i,
             data: new Date(ano, mes - 1, diasMesAnterior - i),
@@ -723,7 +719,7 @@ function renderMes(inicio: Date, dias: HTMLElement): void {
         celulas.push({ dia, data: new Date(ano, mes, dia), fora: false });
     }
     while (celulas.length % 7 !== 0) {
-        const dia = celulas.length - (indiceSegunda + diasNoMes) + 1;
+        const dia = celulas.length - (indiceDomingo + diasNoMes) + 1;
         celulas.push({ dia, data: new Date(ano, mes + 1, dia), fora: true });
     }
 
@@ -775,10 +771,10 @@ function renderAno(inicio: Date, dias: HTMLElement): void {
     dias.style.removeProperty("--colunas");
     dias.innerHTML = Array.from({ length: 12 }, (_, mes) => {
         const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-        const indiceSegunda = (new Date(ano, mes, 1).getDay() + 6) % 7;
+        const indiceDomingo = new Date(ano, mes, 1).getDay();
         let noMes = 0;
 
-        const celulas = Array.from({ length: indiceSegunda }, () => `<span></span>`);
+        const celulas = Array.from({ length: indiceDomingo }, () => `<span></span>`);
         for (let dia = 1; dia <= diasNoMes; dia++) {
             const data = new Date(ano, mes, dia);
             const reunioes = porDia[paraIso(data)] || [];
@@ -866,7 +862,7 @@ function renderReunioes(): void {
                 const reuniao = meetingsData.find(
                     (registro) => registro.id === Number(dado(elemento, "meetingId")),
                 );
-                if (reuniao) openMeetingModal(reuniao, () => abrirFormularioDe(reuniao));
+                if (reuniao) openMeetingModal(reuniao);
             };
 
             elemento.addEventListener("click", abrir);
@@ -1019,7 +1015,7 @@ calendario.addEventListener("click", (evento) => {
         const reuniao = meetingsData.find(
             (registro) => registro.id === Number(dado(evt, "meetingId")),
         );
-        if (reuniao) openMeetingModal(reuniao, () => abrirFormularioDe(reuniao));
+        if (reuniao) openMeetingModal(reuniao);
         return;
     }
 
@@ -1079,131 +1075,6 @@ document.addEventListener("keydown", (evento) => {
         escalaBotao.focus();
     }
 });
-
-/**
- * As reuniões chegam das agendas Google; aqui só se completa o que o convite
- * não diz, como a empresa, o tipo e o que foi decidido.
- */
-function abrirFormularioDe(reuniao: Reuniao): void {
-    void abrirFormulario({
-        titulo: `Reunião de ${reuniao.tipo}`,
-        descricao: `${reuniao.empresa} • registrada em ${reuniao.data}.`,
-        campos: [
-            {
-                nome: "empresaId",
-                rotulo: "Empresa",
-                tipo: "selecao",
-                valor: reuniao.empresaId ?? "",
-                opcoes: [
-                    { valor: "", rotulo: "Sem empresa (só reunião interna)" },
-                    ...empresas.map(({ id, nome }) => ({ valor: id, rotulo: nome })),
-                ],
-            },
-            {
-                nome: "tipo",
-                rotulo: "Tipo",
-                tipo: "selecao",
-                valor: reuniao.tipo,
-                opcoes: TIPOS_DE_REUNIAO.map((tipo) => ({ valor: tipo, rotulo: tipo })),
-            },
-            {
-                nome: "data",
-                rotulo: "Data",
-                tipo: "data",
-                valor: reuniao.dataOrd,
-                obrigatorio: true,
-            },
-            {
-                nome: "horario",
-                rotulo: "Horário",
-                tipo: "hora",
-                valor: reuniao.horario ?? "",
-                dica: "Opcional.",
-            },
-            {
-                nome: "responsavel",
-                rotulo: "Responsável interno",
-                valor: reuniao.responsavel,
-                obrigatorio: true,
-            },
-            {
-                nome: "status",
-                rotulo: "Status",
-                tipo: "selecao",
-                valor: reuniao.status,
-                opcoes: STATUS_DE_REUNIAO.map((status) => ({
-                    valor: status,
-                    rotulo: status,
-                })),
-            },
-            {
-                nome: "participantes",
-                rotulo: "Participantes",
-                tipo: "linhas",
-                valor: reuniao.participantes.join("\n"),
-                dica: "Um nome por linha.",
-                largo: true,
-            },
-            {
-                nome: "resumo",
-                rotulo: "Resumo",
-                tipo: "longo",
-                valor: reuniao.resumo,
-                obrigatorio: true,
-                largo: true,
-            },
-            {
-                nome: "decisoes",
-                rotulo: "Decisões tomadas",
-                tipo: "linhas",
-                valor: reuniao.decisoes.join("\n"),
-                dica: "Uma por linha.",
-                largo: true,
-            },
-            {
-                nome: "proximosPassos",
-                rotulo: "Próximos passos",
-                tipo: "linhas",
-                valor: reuniao.proximosPassos.join("\n"),
-                dica: "Um por linha.",
-                largo: true,
-            },
-        ],
-        confirmar: "Salvar reunião",
-        excluir: {
-            rotulo: "Excluir reunião",
-            confirmacao:
-                "A reunião sai do histórico da empresa e da agenda. Não há como desfazer.",
-            aoExcluir: async () => {
-                await excluirReuniao(reuniao.id);
-                await recarregar();
-            },
-        },
-        aoSalvar: async (valores) => {
-            const dados = {
-                empresaId: valores.texto("empresaId"),
-                tipo: valores.texto("tipo"),
-                data: valores.texto("data"),
-                horario: valores.texto("horario") || null,
-                responsavel: valores.texto("responsavel"),
-                status: valores.texto("status"),
-                resumo: valores.texto("resumo"),
-                participantes: valores.linhas("participantes"),
-                decisoes: valores.linhas("decisoes"),
-                proximosPassos: valores.linhas("proximosPassos"),
-            };
-
-            await salvarReuniao(reuniao.id, dados);
-            await recarregar();
-        },
-    });
-}
-
-async function recarregar(): Promise<void> {
-    ({ reunioes: meetingsData, empresas } = await carregarReunioes());
-    preencherOpcoes();
-    atualizarTela();
-}
 
 /**
  * Um filtro salvo que a tela não consegue mostrar — empresa ou responsável que
