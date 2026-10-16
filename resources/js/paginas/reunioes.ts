@@ -115,15 +115,29 @@ function paraIso(data: Date): string {
     return `${data.getFullYear()}-${mes}-${dia}`;
 }
 
-/** Horário HH:MM para comparar; sem horário fica no fim do dia. */
-function chaveDeHorario(horario: string | null): string {
-    return horario ?? "99:99";
+/**
+ * Minutos desde meia-noite para ordenar. Aceita `H:i` ou `H:i:s` (MySQL TIME).
+ * Sem horário válido fica no fim do dia.
+ */
+function minutosDoHorario(horario: string | null): number {
+    if (!horario) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    const partes = horario.split(":").map(Number);
+    const hora = partes[0];
+    const minuto = partes[1] ?? 0;
+    if (!Number.isFinite(hora) || !Number.isFinite(minuto)) {
+        return Number.POSITIVE_INFINITY;
+    }
+
+    return hora * 60 + minuto;
 }
 
 /** Dentro do dia: da mais cedo para a mais tarde. */
 function ordenarDoDia(reunioes: Reuniao[]): Reuniao[] {
-    return [...reunioes].sort((a, b) =>
-        chaveDeHorario(a.horario).localeCompare(chaveDeHorario(b.horario)),
+    return [...reunioes].sort(
+        (a, b) => minutosDoHorario(a.horario) - minutosDoHorario(b.horario),
     );
 }
 
@@ -140,8 +154,9 @@ function jaPassou(reuniao: Reuniao, agora = new Date()): boolean {
         return false;
     }
 
-    const [hora, minuto] = reuniao.horario.split(":").map(Number);
-    return hora * 60 + minuto <= agora.getHours() * 60 + agora.getMinutes();
+    return (
+        minutosDoHorario(reuniao.horario) <= agora.getHours() * 60 + agora.getMinutes()
+    );
 }
 
 /* ---------------------------------------------------------
