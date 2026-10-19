@@ -198,7 +198,7 @@ class SincronizarAgendasTest extends TestCase
         $this->actingAs(User::firstOrFail())
             ->getJson('/api/reunioes')
             ->assertOk()
-            ->assertJsonFragment(['empresa' => 'Sem empresa', 'empresaId' => null, 'linkMeet' => 'https://meet.google.com/sem-pista']);
+            ->assertJsonFragment(['empresa' => 'Papo com prospect', 'empresaId' => null, 'linkMeet' => 'https://meet.google.com/sem-pista']);
     }
 
     public function test_rodar_de_novo_segue_o_google_sem_apagar_o_que_a_equipe_registrou(): void
