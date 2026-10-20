@@ -34,7 +34,7 @@ class ReuniaoResource extends JsonResource
             'cor' => $this->cor,
             // Qual conta Google trouxe a reunião (Rafa, comercial, …).
             'agenda' => $this->contaGoogle === null ? null : [
-                'nome' => $this->contaGoogle->nome,
+                'nome' => $this->contaGoogle->rotuloNaAgenda(),
                 'email' => $this->contaGoogle->email,
             ],
         ];

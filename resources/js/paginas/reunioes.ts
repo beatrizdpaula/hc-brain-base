@@ -401,14 +401,13 @@ function etiquetaDeTipo(reuniao: Reuniao): string {
     return `<span class="agenda-tipo ${tagDoTipoDeReuniao[reuniao.tipo]}"><i class="agenda-ponto"></i>${escapar(reuniao.tipo)}</span>`;
 }
 
-/** Primeiro nome da conta Google, para caber na lista sem o e-mail inteiro. */
+/** Rótulo curto da conta Google (a API já manda "Equipe HC", "Rafael", …). */
 function rotuloDaAgenda(reuniao: Reuniao): string | null {
     if (!reuniao.agenda) {
         return null;
     }
 
-    const primeiro = reuniao.agenda.nome.trim().split(/\s+/)[0];
-    return primeiro || reuniao.agenda.email;
+    return reuniao.agenda.nome.trim() || reuniao.agenda.email;
 }
 
 /** Cor estável por e-mail: Rafa e comercial ficam com tons diferentes. */

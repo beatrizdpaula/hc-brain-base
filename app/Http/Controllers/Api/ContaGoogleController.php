@@ -61,7 +61,7 @@ class ContaGoogleController extends Controller
             'contas' => ContaGoogle::orderBy('email')->get()->map(fn (ContaGoogle $conta) => [
                 'id' => $conta->id,
                 'email' => $conta->email,
-                'nome' => $conta->nome,
+                'nome' => $conta->rotuloNaAgenda(),
                 'sincronizadaEm' => $conta->sincronizada_em?->setTimezone(GoogleAgenda::FUSO)->format('d/m/Y H:i'),
                 'erro' => $conta->erro,
             ]),
