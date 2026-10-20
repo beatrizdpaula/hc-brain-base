@@ -72,7 +72,7 @@ class AgendasGoogleTest extends TestCase
         $this->actingAs($this->usuario('Administrador'))
             ->withSession(['google_estado' => 'pedido-desta-sessao'])
             ->get('/google/retorno?state=forjado&code=codigo')
-            ->assertRedirect('/usuarios?google=erro');
+            ->assertRedirect('/usuarios?google=sessao');
 
         $this->assertDatabaseCount('contas_google', 0);
     }
