@@ -202,7 +202,31 @@ class SincronizarAgendasTest extends TestCase
                 'empresa' => 'Papo com prospect',
                 'empresaId' => null,
                 'linkMeet' => 'https://meet.google.com/sem-pista',
-                'agenda' => ['nome' => 'Ana HC', 'email' => 'ana@hc.com.br'],
+                'agenda' => ['nome' => 'Ana', 'email' => 'ana@hc.com.br'],
+            ]);
+    }
+
+    public function test_conta_healthcare_aparece_como_equipe_hc_na_agenda(): void
+    {
+        $this->travelTo('2026-10-13 12:00:00');
+        $this->seed(UsuarioSeeder::class);
+        $this->empresa('clinica-vida', 'CLINICA VIDA LTDA');
+        $this->conta('comercial@hc.com.br', 'HealthCare Contabilidade');
+        Http::preventStrayRequests();
+        Http::fake([
+            self::TOKEN => Http::response(['access_token' => 'acesso']),
+            self::EVENTOS => Http::response(['items' => [
+                $this->evento('comercial-hc', ['summary' => 'Comercial — Clínica Vida']),
+            ]]),
+        ]);
+
+        $this->artisan('hc:sincronizar-agendas')->assertSuccessful();
+
+        $this->actingAs(User::firstOrFail())
+            ->getJson('/api/reunioes')
+            ->assertOk()
+            ->assertJsonFragment([
+                'agenda' => ['nome' => 'Equipe HC', 'email' => 'comercial@hc.com.br'],
             ]);
     }
 
