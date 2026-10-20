@@ -32,6 +32,11 @@ php artisan hc:preparar
 # dentro do prazo do Render. Uma falha aqui não derruba o contêiner.
 runuser -u www-data -- php artisan db:seed --class=ImportEmpresasSeeder --force &
 
+# Colaboradores: se a planilha estiver em storage/app (via deploy), importa em background.
+if [ -f /app/storage/app/colaboradores.xlsx ]; then
+    runuser -u www-data -- php artisan hc:importar-colaboradores &
+fi
+
 # O agendador roda ao lado do Apache
 runuser -u www-data -- php artisan schedule:work &
 
