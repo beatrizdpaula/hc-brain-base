@@ -32,6 +32,11 @@ class ReuniaoResource extends JsonResource
             'status' => $this->status,
             'linkMeet' => $this->link_meet,
             'cor' => $this->cor,
+            // Qual conta Google trouxe a reunião (Rafa, comercial, …).
+            'agenda' => $this->contaGoogle === null ? null : [
+                'nome' => $this->contaGoogle->nome,
+                'email' => $this->contaGoogle->email,
+            ],
         ];
     }
 }

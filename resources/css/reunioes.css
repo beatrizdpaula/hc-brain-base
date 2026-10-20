@@ -1106,6 +1106,24 @@
     white-space: nowrap;
 }
 
+/* Conta Google de origem (Rafa, comercial, …). */
+.agenda-evento-origem {
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--roxo-claro);
+    font-size: var(--texto-xs);
+    font-weight: var(--peso-forte);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agenda-linha-etiquetas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+    align-items: center;
+}
+
 /* --------------------------------------------------------------------------
    CALENDÁRIO DO ANO
    Doze miniaturas lado a lado: o ano serve para achar onde houve movimento,

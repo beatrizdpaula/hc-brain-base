@@ -401,6 +401,35 @@ function etiquetaDeTipo(reuniao: Reuniao): string {
     return `<span class="agenda-tipo ${tagDoTipoDeReuniao[reuniao.tipo]}"><i class="agenda-ponto"></i>${escapar(reuniao.tipo)}</span>`;
 }
 
+/** Primeiro nome da conta Google, para caber na lista sem o e-mail inteiro. */
+function rotuloDaAgenda(reuniao: Reuniao): string | null {
+    if (!reuniao.agenda) {
+        return null;
+    }
+
+    const primeiro = reuniao.agenda.nome.trim().split(/\s+/)[0];
+    return primeiro || reuniao.agenda.email;
+}
+
+/** Cor estável por e-mail: Rafa e comercial ficam com tons diferentes. */
+function tomDaAgenda(email: string): string {
+    let soma = 0;
+    for (const caractere of email) {
+        soma += caractere.charCodeAt(0);
+    }
+
+    return (["blue", "purple", "yellow"] as const)[soma % 3];
+}
+
+function etiquetaDeAgenda(reuniao: Reuniao): string {
+    const rotulo = rotuloDaAgenda(reuniao);
+    if (!rotulo || !reuniao.agenda) {
+        return "";
+    }
+
+    return `<span class="tag ${tomDaAgenda(reuniao.agenda.email)}" title="${escapar(reuniao.agenda.email)}">${escapar(rotulo)}</span>`;
+}
+
 function renderLinha(reuniao: Reuniao): string {
     return `
     <div class="agenda-linha ${classeDoStatus(reuniao)}"${estiloDaCor(reuniao)} role="button" tabindex="0"
@@ -417,7 +446,7 @@ function renderLinha(reuniao: Reuniao): string {
         <div class="agenda-linha-titulo">${escapar(reuniao.empresa)}</div>
         <div class="agenda-linha-motivo">${escapar(reuniao.resumo)}</div>
       </div>
-      <div>${etiquetaDeTipo(reuniao)}</div>
+      <div class="agenda-linha-etiquetas">${etiquetaDeTipo(reuniao)}${etiquetaDeAgenda(reuniao)}</div>
       <div>${etiquetaDeStatus(reuniao)}</div>
       <div class="agenda-pessoa">${escapar(reuniao.responsavel)}</div>
       <div class="agenda-pessoa">${plural(reuniao.participantes.length, "pessoa", "pessoas")}</div>
@@ -441,6 +470,7 @@ function renderCartao(reuniao: Reuniao): string {
       <div class="agenda-card-meta">
         ${etiquetaDeTipo(reuniao)}
         ${etiquetaDeStatus(reuniao)}
+        ${etiquetaDeAgenda(reuniao)}
         <span class="agenda-pessoa">Realiza: ${escapar(reuniao.responsavel)}</span>
       </div>
     </article>`;
@@ -639,6 +669,12 @@ function renderEvento(reuniao: Reuniao, passada = false): string {
       <span class="agenda-evento-hora">${hora}</span>
       <strong>${escapar(reuniao.empresa)}</strong>
       <span class="agenda-evento-tipo">${escapar(reuniao.tipo)}</span>
+      ${(() => {
+          const origem = rotuloDaAgenda(reuniao);
+          return origem
+              ? `<span class="agenda-evento-origem">${escapar(origem)}</span>`
+              : "";
+      })()}
     </button>`;
 }
 

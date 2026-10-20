@@ -238,6 +238,18 @@ const RETORNOS_DO_GOOGLE: Record<string, [string, string]> = {
         "Conexão cancelada",
         "A permissão não foi dada na tela do Google, então nenhuma agenda foi conectada.",
     ],
+    sessao: [
+        "Sessão expirou no meio do login",
+        "Abra Usuários de novo, clique em Conectar conta Google e aceite na mesma aba, sem demorar. Não precisa de outro Client ID.",
+    ],
+    oauth: [
+        "Google recusou o cliente OAuth",
+        "No Cloud, o redirect tem que ser exatamente o GOOGLE_REDIRECT_URI do Render (…/google/retorno), e o Client ID/Secret têm que ser do mesmo cliente HC Brain.",
+    ],
+    sem_refresh: [
+        "Google não deu acesso contínuo",
+        "Na tela do Google, aceite todas as permissões (incluindo agenda). Se a conta já tinha autorizado antes, revogue o acesso em myaccount.google.com/permissions e conecte de novo.",
+    ],
     erro: [
         "Não foi possível conectar",
         "O Google não confirmou a conexão. Tente de novo; se repetir, confira o cliente OAuth no ambiente.",

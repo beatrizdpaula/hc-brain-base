@@ -144,9 +144,23 @@ export function openMeetingModal(meeting: Reuniao): void {
     porId("meetingModalEmpresa").textContent = `Reunião • ${meeting.empresa}`;
     porId("meetingModalTitle").textContent = `Reunião de ${meeting.tipo}`;
 
+    const agenda = meeting.agenda
+        ? (() => {
+              const rotulo =
+                  meeting.agenda.nome.trim().split(/\s+/)[0] || meeting.agenda.email;
+              let soma = 0;
+              for (const caractere of meeting.agenda.email) {
+                  soma += caractere.charCodeAt(0);
+              }
+              const tom = (["blue", "purple", "yellow"] as const)[soma % 3];
+              return `<span class="tag ${tom}" title="${escapar(meeting.agenda.email)}">${escapar(rotulo)}</span>`;
+          })()
+        : "";
+
     porId("meetingModalBadges").innerHTML = `
     <span class="tag ${tagDoTipoDeReuniao[meeting.tipo] ?? ""}">${escapar(meeting.tipo)}</span>
     <span class="tag ${tagDoStatus[meeting.status] ?? ""}">${escapar(meeting.status)}</span>
+    ${agenda}
   `;
 
     porId("meetingModalData").textContent = meeting.data;

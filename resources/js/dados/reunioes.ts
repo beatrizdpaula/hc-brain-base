@@ -38,6 +38,14 @@ export interface Reuniao {
     linkMeet: string | null;
     /** A cor do evento no Google Agenda (#rrggbb); sem ela, vale a do status. */
     cor: string | null;
+    /** Conta Google de onde a reunião veio; null se foi cadastrada à mão. */
+    agenda: AgendaDaReuniao | null;
+}
+
+/** Conta Google conectada que originou a reunião. */
+export interface AgendaDaReuniao {
+    nome: string;
+    email: string;
 }
 
 /** A empresa como o filtro e o cadastro precisam dela: nome para ler, id para gravar. */

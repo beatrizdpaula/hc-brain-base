@@ -41,7 +41,8 @@ class GoogleController extends Controller
         $estado = $request->session()->pull(self::ESTADO);
 
         if (! is_string($estado) || ! hash_equals($estado, (string) $request->query('state'))) {
-            return $this->voltar('erro');
+            // Sessão perdeu o state (aba fechou, cookie, ou demorou demais no Google).
+            return $this->voltar('sessao');
         }
 
         // Quem clica em "Cancelar" na tela do Google volta sem código.
@@ -51,14 +52,18 @@ class GoogleController extends Controller
 
         try {
             $dados = GoogleAgenda::trocarCodigo($request->string('code')->toString());
-        } catch (HttpClientException) {
-            return $this->voltar('erro');
+        } catch (HttpClientException $erro) {
+            report($erro);
+
+            // Quase sempre: redirect URI diferente do Cloud, ou Client ID/Secret trocados.
+            return $this->voltar('oauth');
         }
 
         $conta = ContaGoogle::firstOrNew(['email' => $dados['email']]);
 
         if ($dados['refresh_token'] === null && ! $conta->exists) {
-            return $this->voltar('erro');
+            // Conta nova sem refresh_token: o Google não deu acesso offline.
+            return $this->voltar('sem_refresh');
         }
 
         $conta->fill([
