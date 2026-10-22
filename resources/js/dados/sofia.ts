@@ -1,5 +1,5 @@
 /* =========================================================
-   SOFIA — sugestões iniciais e respostas do assistente
+   SOFIA — respostas do assistente oficial do HC Brain
    A resposta é montada no servidor, onde está o banco: a Sofia lê
    exatamente as mesmas empresas, reuniões e treinamentos das
    outras telas.
