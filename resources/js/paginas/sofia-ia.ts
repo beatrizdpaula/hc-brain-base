@@ -48,6 +48,7 @@ import {
 } from "../comum/estado.ts";
 import { escapar } from "../comum/formato.ts";
 import { desenharIcones, icone } from "../comum/icones.ts";
+import { htmlDeMarkdown, textoSemMarkdown } from "../comum/markdown.ts";
 import { showModal } from "../comum/modal.ts";
 import { iniciarPagina } from "../comum/shell.ts";
 
@@ -288,7 +289,7 @@ function escolherVozPortuguesa(): void {
 
 /** Fala o texto e resolve quando termina — ou quando alguém interrompe. */
 function falar(texto: string): Promise<void> {
-    const limpo = texto.trim();
+    const limpo = textoSemMarkdown(texto);
     if (!sinteseDeVoz || !limpo) return Promise.resolve();
 
     return new Promise((resolver) => {
@@ -375,7 +376,7 @@ function htmlMensagem(mensagem: MensagemSofia, indice: number): string {
       <div class="message bot">
         <span class="sofia-avatar" aria-hidden="true">S</span>
         <div class="message-corpo">
-          <div class="message-texto">${escapar(mensagem.texto)}</div>
+          <div class="message-texto">${htmlDeMarkdown(mensagem.texto)}</div>
           <div class="message-acoes">
             <button type="button" class="sofia-copiar" data-copiar="${indice}">Copiar</button>
             ${ouvir}
