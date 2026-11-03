@@ -178,12 +178,16 @@ function renderTreinamentos(empresa: EmpresaDetalhada, treinamentos: ConteudoTre
             const conteudo = treinamentos.find(
                 (registro) => registro.id === dado(item, "treinamento"),
             );
-            if (conteudo) {
-                showModal(
-                    conteudo.titulo,
-                    `${conteudo.descricao}\n\nEste conteúdo foi relacionado à ${empresa.nome} porque atende a um processo ou necessidade associada ao cliente.`,
-                );
-            }
+            if (!conteudo) return;
+
+            const link = conteudo.link?.trim() ?? "";
+            showModal(
+                conteudo.titulo,
+                `${conteudo.descricao}\n\nEste conteúdo foi relacionado à ${empresa.nome} porque atende a um processo ou necessidade associada ao cliente.`,
+                link
+                    ? [{ rotulo: "Acessar material", href: link, primaria: true }]
+                    : [],
+            );
         });
     });
 }

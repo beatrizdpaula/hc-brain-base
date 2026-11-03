@@ -224,9 +224,11 @@ class EscritaTest extends TestCase
                 'trilha' => null,
                 'cursos' => null,
                 'processo' => null,
+                'link' => 'https://capacitacao.example/lgpd',
             ])
             ->assertCreated()
-            ->assertJsonPath('data.titulo', 'LGPD na prática');
+            ->assertJsonPath('data.titulo', 'LGPD na prática')
+            ->assertJsonPath('data.link', 'https://capacitacao.example/lgpd');
 
         $this->autenticado()
             ->getJson('/api/treinamentos')

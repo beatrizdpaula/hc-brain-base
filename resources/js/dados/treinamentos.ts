@@ -20,6 +20,8 @@ export interface ConteudoTreinamento {
     trilha: string | null;
     cursos: string | null;
     processo: string | null;
+    /** URL do material; null quando o cadastro ainda não tem conteúdo para abrir. */
+    link: string | null;
 }
 
 /** Ícone e cor de cada tipo de conteúdo — derivados do tipo, não gravados. */
@@ -71,6 +73,7 @@ export interface DadosDeTreinamento {
     trilha: string | null;
     cursos: string | null;
     processo: string | null;
+    link: string | null;
 }
 
 export function carregarTreinamentos(): Promise<BaseTreinamentos> {

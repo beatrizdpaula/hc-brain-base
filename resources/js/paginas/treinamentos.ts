@@ -2,6 +2,7 @@
    TELA TREINAMENTOS
    Mesma base de conteúdos usada no detalhe da empresa e nas
    respostas da Sofia. Os filtros ficam salvos no estado.
+   Acessar o material e editar o cadastro são ações separadas.
    ========================================================= */
 
 import {
@@ -21,6 +22,7 @@ import { atualizarSecao, observarEstado, obterSecao } from "../comum/estado.ts";
 import { escapar, plural } from "../comum/formato.ts";
 import { abrirFormulario } from "../comum/formulario.ts";
 import { desenharIcones, icone } from "../comum/icones.ts";
+import { showModal } from "../comum/modal.ts";
 import { iniciarPagina } from "../comum/shell.ts";
 
 iniciarPagina("treinamentos");
@@ -31,6 +33,19 @@ const tipo = selecao("trainingTypeFilter");
 const nivel = selecao("trainingLevelFilter");
 
 let { conteudos: treinamentoData, historico } = await carregarTreinamentos();
+
+function acessarMaterial(item: ConteudoTreinamento): void {
+    const link = item.link?.trim() ?? "";
+    if (link !== "") {
+        window.open(link, "_blank", "noopener,noreferrer");
+        return;
+    }
+
+    showModal(
+        item.titulo,
+        "Este conteúdo ainda não tem material vinculado. Use Editar para cadastrar a URL do curso, manual ou fluxograma.",
+    );
+}
 
 async function abrirFormularioDe(item?: ConteudoTreinamento): Promise<void> {
     const salvou = await abrirFormulario({
@@ -50,6 +65,13 @@ async function abrirFormularioDe(item?: ConteudoTreinamento): Promise<void> {
                 valor: item?.descricao,
                 obrigatorio: true,
                 largo: true,
+            },
+            {
+                nome: "link",
+                rotulo: "Link do material",
+                valor: item?.link ?? "",
+                largo: true,
+                dica: "URL para abrir o curso, manual ou fluxograma. Separado da edição do cadastro.",
             },
             {
                 nome: "tipo",
@@ -111,6 +133,7 @@ async function abrirFormularioDe(item?: ConteudoTreinamento): Promise<void> {
                 trilha: valores.texto("trilha") || null,
                 cursos: valores.texto("cursos") || null,
                 processo: valores.texto("processo") || null,
+                link: valores.texto("link") || null,
             };
 
             await (item
@@ -152,8 +175,9 @@ function renderConteudos(): void {
         ? filtrados
               .map((item) => {
                   const aparencia = aparenciaPorTipo[item.tipo];
+                  const temLink = Boolean(item.link?.trim());
                   return `
-            <article class="training-card" data-training-id="${escapar(item.id)}">
+            <article class="training-card">
               <div class="training-card-top">
                 <span class="icone-quadro ${aparencia.cor}">${icone(aparencia.icone)}</span>
                 <span class="tag ${aparencia.cor}">${escapar(item.tipo)}</span>
@@ -164,6 +188,11 @@ function renderConteudos(): void {
                 <span class="tag gray">${escapar(item.categoria)}</span>
                 ${item.nivel !== "Todos" ? `<span class="tag gray">${escapar(item.nivel)}</span>` : ""}
                 ${item.cursos ? `<span class="tag blue">${escapar(item.cursos)}</span>` : ""}
+                ${temLink ? `<span class="tag green">Material disponível</span>` : `<span class="tag gray">Sem link</span>`}
+              </div>
+              <div class="training-card-acoes">
+                <button type="button" class="primary" data-acessar="${escapar(item.id)}">Acessar material</button>
+                <button type="button" class="secondary" data-editar="${escapar(item.id)}">Editar</button>
               </div>
             </article>
           `;
@@ -171,10 +200,19 @@ function renderConteudos(): void {
               .join("")
         : `<div class="empty-state">Nenhum conteúdo encontrado com os filtros atuais.</div>`;
 
-    todos("[data-training-id]", grid).forEach((card) => {
-        card.addEventListener("click", () => {
+    todos("[data-acessar]", grid).forEach((botao) => {
+        botao.addEventListener("click", () => {
             const item = treinamentoData.find(
-                (registro) => registro.id === dado(card, "trainingId"),
+                (registro) => registro.id === dado(botao, "acessar"),
+            );
+            if (item) acessarMaterial(item);
+        });
+    });
+
+    todos("[data-editar]", grid).forEach((botao) => {
+        botao.addEventListener("click", () => {
+            const item = treinamentoData.find(
+                (registro) => registro.id === dado(botao, "editar"),
             );
             if (item) void abrirFormularioDe(item);
         });

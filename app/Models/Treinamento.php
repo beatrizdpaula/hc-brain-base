@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'id', 'tipo', 'titulo', 'categoria', 'nivel', 'descricao',
-    'trilha', 'cursos', 'processo', 'ordem',
+    'trilha', 'cursos', 'processo', 'link', 'ordem',
 ])]
 class Treinamento extends Model
 {

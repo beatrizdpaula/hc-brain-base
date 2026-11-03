@@ -21,16 +21,22 @@ class SalvarTreinamentoRequest extends FormRequest
             'trilha' => ['nullable', 'string', 'max:120'],
             'cursos' => ['nullable', 'string', 'max:60'],
             'processo' => ['nullable', 'string', 'max:120'],
+            'link' => ['nullable', 'url', 'max:500'],
         ];
     }
 
     public function attributes(): array
     {
-        return ['nivel' => 'nível'];
+        return [
+            'nivel' => 'nível',
+            'link' => 'link do material',
+        ];
     }
 
     public function paraOBanco(): array
     {
+        $link = $this->input('link');
+
         return [
             'titulo' => $this->string('titulo')->toString(),
             'tipo' => $this->string('tipo')->toString(),
@@ -40,6 +46,7 @@ class SalvarTreinamentoRequest extends FormRequest
             'trilha' => $this->input('trilha'),
             'cursos' => $this->input('cursos'),
             'processo' => $this->input('processo'),
+            'link' => is_string($link) && trim($link) !== '' ? trim($link) : null,
         ];
     }
 }

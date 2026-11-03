@@ -21,6 +21,7 @@ class TreinamentoResource extends JsonResource
             'trilha' => $this->trilha,
             'cursos' => $this->cursos,
             'processo' => $this->processo,
+            'link' => $this->link,
         ];
     }
 }

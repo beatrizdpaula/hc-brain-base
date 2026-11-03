@@ -1313,6 +1313,7 @@ final class SofiaTools
             'categoria' => $item->categoria,
             'descricao' => self::trecho($item->descricao),
             'nivel' => $item->nivel,
+            'link' => $item->link,
             'caminho' => Telas::caminho('treinamentos'),
         ];
     }

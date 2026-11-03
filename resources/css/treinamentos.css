@@ -48,13 +48,25 @@
     border: 1px solid var(--border);
     border-radius: var(--raio-md);
     background: var(--surface-alto);
-    cursor: pointer;
     transition: var(--transicao);
 }
 
 .training-card:hover {
     border-color: var(--border-forte);
     background: var(--surface-hover);
+}
+
+.training-card-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+    margin-top: var(--esp-1);
+}
+
+.training-card-acoes .primary,
+.training-card-acoes .secondary {
+    flex: 1 1 auto;
+    justify-content: center;
 }
 
 .training-card-top {
