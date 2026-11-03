@@ -13,6 +13,8 @@ export interface ResultadoPesquisa {
     title: string;
     text: string;
     meta: string;
+    /** Quando existe, o clique abre esse caminho em vez de só um modal. */
+    caminho?: string | null;
 }
 
 /** Escopo escolhido na tela → tipo correspondente no índice. */

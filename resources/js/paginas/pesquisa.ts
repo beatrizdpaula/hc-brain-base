@@ -73,7 +73,9 @@ function filtrar(): ResultadoPesquisa[] {
             combina(texto, palavras) &&
             (tipo === "Tudo" || item.type === tipo) &&
             (area === "Todas" || item.area === area) &&
-            (escopo === "Tudo" || item.type === scopeToType[escopo]) &&
+            (escopo === "Tudo" ||
+                item.type === scopeToType[escopo] ||
+                (escopo === "Comercial" && item.area === "Comercial")) &&
             periodoOk
         );
     });
@@ -162,7 +164,7 @@ function renderResultados(): void {
     resultados.innerHTML = encontrados
         .map(
             (item) => `
-        <button type="button" class="result-card" data-result="${escapar(item.title)}">
+        <button type="button" class="result-card" data-result="${escapar(item.title)}" data-caminho="${escapar(item.caminho ?? "")}">
           <span class="result-type">${escapar(item.type)} • ${escapar(item.area)}</span>
           <h3>${escapar(item.title)}</h3>
           <p>${escapar(item.text)}</p>
@@ -173,7 +175,14 @@ function renderResultados(): void {
         .join("");
 
     todos("[data-result]", resultados).forEach((item) => {
-        item.addEventListener("click", () => showModal(dado(item, "result")));
+        item.addEventListener("click", () => {
+            const caminho = dado(item, "caminho");
+            if (caminho) {
+                window.location.href = caminho;
+                return;
+            }
+            showModal(dado(item, "result"));
+        });
     });
 }
 

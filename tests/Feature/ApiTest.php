@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Documento;
+use App\Models\Pasta;
 use App\Models\Reuniao;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -182,12 +185,46 @@ class ApiTest extends TestCase
             ->assertJsonStructure([['nome', 'setor', 'socio', 'regime', 'meses', 'primeiro', 'atual', 'total']]);
     }
 
-    public function test_indice_de_pesquisa(): void
+    public function test_indice_de_pesquisa_vem_da_base_ao_vivo(): void
     {
+        $documento = Documento::query()->where('nome', 'Proposta comercial')->firstOrFail();
+
+        $resposta = $this->autenticado()
+            ->getJson('/api/pesquisa')
+            ->assertOk()
+            ->assertJsonFragment([
+                'type' => 'Documento',
+                'title' => $documento->nomeDoArquivo(),
+            ]);
+
+        $this->assertNotEmpty($resposta->json());
+        $this->assertContains('Documento', collect($resposta->json())->pluck('type')->all());
+        $this->assertContains('Pessoa', collect($resposta->json())->pluck('type')->all());
+    }
+
+    public function test_documento_criado_entra_na_pesquisa_geral(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $pasta = Pasta::firstOrFail();
+        Documento::create([
+            'pasta_id' => $pasta->id,
+            'nome' => 'Lista de Usuários',
+            'extensao' => 'pdf',
+            'arquivo' => 'documentos/'.$pasta->id.'/lista.pdf',
+            'conteudo' => '%PDF-1.4',
+            'tamanho' => 8,
+            'mime' => 'application/pdf',
+            'enviado_por' => User::firstOrFail()->id,
+        ]);
+
         $this->autenticado()
             ->getJson('/api/pesquisa')
             ->assertOk()
-            ->assertJsonCount(16);
+            ->assertJsonFragment([
+                'type' => 'Documento',
+                'title' => 'Lista de Usuários.pdf',
+            ]);
     }
 
     public function test_cadastro_de_usuario_entra_na_base(): void
