@@ -308,6 +308,30 @@ class EscritaTest extends TestCase
         Storage::disk(config('hc.documentos.disco'))->assertExists($caminho);
     }
 
+    public function test_download_inline_abre_pdf_no_navegador(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $pasta = Pasta::firstOrFail();
+        $bytes = "%PDF-1.4\npreview\n%%EOF\n";
+        $documento = Documento::create([
+            'pasta_id' => $pasta->id,
+            'nome' => 'Previa Inline',
+            'extensao' => 'pdf',
+            'arquivo' => 'documentos/'.$pasta->id.'/previa.pdf',
+            'conteudo' => $bytes,
+            'tamanho' => strlen($bytes),
+            'mime' => 'application/pdf',
+            'enviado_por' => User::firstOrFail()->id,
+        ]);
+
+        $this->autenticado()
+            ->get("/api/documentos/{$documento->id}/arquivo?inline=1")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'inline; filename="Previa Inline.pdf"');
+    }
+
     public function test_download_aceita_conteudo_bytea_como_stream_do_postgres(): void
     {
         Storage::fake(config('hc.documentos.disco'));

@@ -343,6 +343,21 @@
     background: #fff;
 }
 
+.document-preview-atalho {
+    margin: 0;
+    padding: var(--esp-3) var(--esp-4);
+    border-top: 1px solid #333;
+    background: #2a2a2a;
+    color: #ddd;
+    font-size: var(--texto-sm);
+    text-align: center;
+}
+
+.document-preview-atalho a {
+    color: #c4b5fd;
+    text-decoration: underline;
+}
+
 .document-preview-imagem {
     display: block;
     max-width: 100%;

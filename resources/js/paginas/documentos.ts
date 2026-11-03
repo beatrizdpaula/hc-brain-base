@@ -321,24 +321,36 @@ async function previsualizar(id: number): Promise<void> {
     const documento = porIdDoDocumento(id);
     if (!documento || !podePrevisualizar(documento)) return;
 
-    const blob = await carregarBlob(documento);
-    if (!blob) return;
-
     const modal = garantirModalDePrevia();
     const corpo = porId("documentPreviewBody");
     porId("documentPreviewTitle").textContent = tituloDaPrevia(documento);
     porId("documentPreviewFonte").textContent =
         `Fonte: ${documento.pasta} · ${documento.exibicao}`;
 
-    if (urlDaPrevia) URL.revokeObjectURL(urlDaPrevia);
-    urlDaPrevia = URL.createObjectURL(blob);
+    if (urlDaPrevia) {
+        URL.revokeObjectURL(urlDaPrevia);
+        urlDaPrevia = null;
+    }
 
     const extensao = documento.extensao;
+    const urlInline = enderecoDoArquivo(id, { inline: true });
+
     if (extensao === "pdf") {
-        corpo.innerHTML = `<iframe class="document-preview-frame" title="${escapar(documento.exibicao)}" src="${urlDaPrevia}"></iframe>`;
+        // Mesma origem + inline: evita blob: no iframe (Chrome/Edge bloqueiam).
+        corpo.innerHTML = `
+          <iframe class="document-preview-frame" title="${escapar(documento.exibicao)}" src="${escapar(urlInline)}"></iframe>
+          <p class="document-preview-atalho">
+            <a href="${escapar(urlInline)}" target="_blank" rel="noopener">Abrir PDF em nova aba</a>
+          </p>
+        `;
     } else if (documento.tipo === "imagem") {
-        corpo.innerHTML = `<img class="document-preview-imagem" src="${urlDaPrevia}" alt="${escapar(documento.exibicao)}" />`;
+        corpo.innerHTML = `<img class="document-preview-imagem" src="${escapar(urlInline)}" alt="${escapar(documento.exibicao)}" />`;
     } else if (extensao === "txt") {
+        const blob = await carregarBlob(documento);
+        if (!blob) {
+            fecharPrevia();
+            return;
+        }
         const texto = await blob.text();
         corpo.innerHTML = `<pre class="document-preview-texto">${escapar(texto)}</pre>`;
     } else {

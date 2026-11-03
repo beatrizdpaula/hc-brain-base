@@ -103,8 +103,9 @@ export function excluirDocumento(id: number): Promise<void> {
 }
 
 /** O download é uma navegação comum: o Laravel responde com o arquivo. */
-export function enderecoDoArquivo(id: number): string {
-    return `/api/documentos/${id}/arquivo`;
+export function enderecoDoArquivo(id: number, opcoes: { inline?: boolean } = {}): string {
+    const base = `/api/documentos/${id}/arquivo`;
+    return opcoes.inline ? `${base}?inline=1` : base;
 }
 
 export function criarPasta(nome: string): Promise<Pasta> {

@@ -9,6 +9,7 @@ use App\Http\Resources\DocumentoResource;
 use App\Models\Documento;
 use App\Models\Pasta;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -95,8 +96,10 @@ class DocumentoController extends Controller
      * O arquivo sai pelo Laravel, e não por uma URL pública do disco, porque
      * documento da HC não deve ser acessível a quem não está na sessão.
      * Se o disco do contêiner sumiu no deploy, serve o conteúdo guardado na base.
+     *
+     * `?inline=1` abre no navegador (prévia); sem isso, força o download.
      */
-    public function download(Documento $documento): StreamedResponse
+    public function download(Request $request, Documento $documento): StreamedResponse
     {
         $bytes = $documento->lerBytes() ?? $documento->tentarRecuperarBytes();
         abort_if($bytes === null, 404, 'Este registro não tem arquivo anexado.');
@@ -114,14 +117,39 @@ class DocumentoController extends Controller
             }
         }
 
-        return response()->streamDownload(
+        $nome = $documento->nomeDoArquivo();
+        $mime = $this->mimeParaResposta($documento);
+        $disposicao = $request->boolean('inline') ? 'inline' : 'attachment';
+        $arquivoSeguro = str_replace(['"', '\\', "\r", "\n"], '', $nome);
+
+        return response()->stream(
             function () use ($bytes): void {
                 echo $bytes;
             },
-            $documento->nomeDoArquivo(),
+            200,
             [
-                'Content-Type' => $documento->mime ?: 'application/octet-stream',
+                'Content-Type' => $mime,
+                'Content-Length' => (string) strlen($bytes),
+                'Content-Disposition' => $disposicao.'; filename="'.$arquivoSeguro.'"',
+                'X-Content-Type-Options' => 'nosniff',
             ],
         );
+    }
+
+    private function mimeParaResposta(Documento $documento): string
+    {
+        if ($documento->extensao === 'pdf') {
+            return 'application/pdf';
+        }
+
+        if ($documento->extensao === 'txt') {
+            return 'text/plain; charset=UTF-8';
+        }
+
+        if (in_array($documento->extensao, ['png', 'jpg', 'jpeg'], true)) {
+            return $documento->extensao === 'png' ? 'image/png' : 'image/jpeg';
+        }
+
+        return $documento->mime ?: 'application/octet-stream';
     }
 }
