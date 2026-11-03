@@ -232,28 +232,38 @@
 .finance-donut::after {
     content: "";
     position: absolute;
-    inset: 31px;
+    inset: 34px;
     border-radius: 50%;
     background: var(--surface);
     box-shadow: 0 0 0 1px var(--border);
 }
 .finance-donut-center {
     position: absolute;
-    inset: 0;
+    /* Mesmo inset do furo (::after), senão o valor invade o anel colorido. */
+    inset: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    text-align: center;
+    overflow: hidden;
     z-index: 2;
 }
 .finance-donut-center strong {
     color: var(--texto-forte);
-    font-size: var(--texto-lg);
+    font-size: var(--texto-xs);
+    font-weight: 700;
+    line-height: 1.15;
+    max-width: 100%;
+    overflow-wrap: anywhere;
 }
 .finance-donut-center span {
     color: var(--texto-fraco);
-    font-size: var(--texto-xs);
-    margin-top: 2px;
+    font-size: 0.625rem;
+    line-height: 1.2;
+    margin-top: 0;
 }
 .finance-legend {
     display: flex;
