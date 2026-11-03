@@ -55,6 +55,19 @@ export const aparenciaPorTipo: Record<
     outro: { icone: "file", cor: "gray", rotulo: "Arquivo" },
 };
 
+/**
+ * PDF, texto, Word e imagem abrem no olho. Planilha, slide e o resto
+ * só baixam — o navegador não pré-visualiza esses formatos.
+ */
+export function podePrevisualizar(documento: Documento): boolean {
+    return (
+        documento.temArquivo &&
+        (documento.tipo === "pdf" ||
+            documento.tipo === "doc" ||
+            documento.tipo === "imagem")
+    );
+}
+
 export function carregarDocumentos(): Promise<BaseDocumentos> {
     return obter<BaseDocumentos>("/documentos");
 }

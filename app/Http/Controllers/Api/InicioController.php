@@ -43,7 +43,7 @@ class InicioController extends Controller
         return Reuniao::query()
             ->with('empresa')
             ->whereDate('data', '>=', $hoje)
-            ->where('status', '!=', 'Cancelada')
+            ->where('status', 'Agendada')
             ->orderBy('data')
             ->orderBy('horario')
             ->limit(self::LIMITE)
