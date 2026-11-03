@@ -705,9 +705,63 @@ class SofiaChatTest extends TestCase
         $this->assertNotContains('editar_empresa', $nomes);
         $this->assertNotContains('apagar_empresa', $nomes);
         $this->assertContains('criar_usuario', $nomes);
+        $this->assertContains('listar_usuarios', $nomes);
+        $this->assertContains('gerar_pdf_usuarios', $nomes);
         $this->assertContains('entregar_documento', $nomes);
         $this->assertContains('criar_documento', $nomes);
         $this->assertContains('criar_imagem', $nomes);
+    }
+
+    public function test_sofia_lista_usuarios_da_base(): void
+    {
+        $this->simularChat(
+            'Há usuários cadastrados.',
+            $this->chamada('listar_usuarios', []),
+        );
+
+        $resposta = $this->autenticado()
+            ->postJson('/api/sofia/perguntar', ['pergunta' => 'Quais usuários temos?'])
+            ->assertOk();
+
+        $this->assertSame('Há usuários cadastrados.', $resposta->json('resposta'));
+        Http::assertSent(function (Request $request): bool {
+            $messages = $request->data()['messages'] ?? [];
+            $tool = collect($messages)->first(
+                fn ($mensagem) => is_array($mensagem) && ($mensagem['role'] ?? '') === 'tool',
+            );
+            if (! is_array($tool)) {
+                return false;
+            }
+            $corpo = json_decode((string) ($tool['content'] ?? ''), true);
+
+            return is_array($corpo)
+                && ($corpo['total'] ?? 0) >= 1
+                && is_array($corpo['usuarios'] ?? null);
+        });
+    }
+
+    public function test_sofia_gera_pdf_com_lista_de_usuarios(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $this->simularChat(
+            'PDF pronto.',
+            $this->chamada('gerar_pdf_usuarios', [
+                'nome' => 'Lista de Usuários Cadastrados',
+            ]),
+        );
+
+        $this->autenticado()
+            ->postJson('/api/sofia/perguntar', ['pergunta' => 'Liste os usuários no PDF'])
+            ->assertOk();
+
+        $documento = Documento::query()->where('nome', 'Lista de Usuários Cadastrados')->first();
+        $this->assertNotNull($documento);
+        $this->assertSame('pdf', $documento->extensao);
+        $this->assertSame('application/pdf', $documento->mime);
+        Storage::disk(config('hc.documentos.disco'))->assertExists($documento->arquivo);
+        $bytes = Storage::disk(config('hc.documentos.disco'))->get($documento->arquivo);
+        $this->assertStringStartsWith('%PDF', $bytes);
     }
 
     public function test_sofia_envia_o_historico_da_conversa(): void

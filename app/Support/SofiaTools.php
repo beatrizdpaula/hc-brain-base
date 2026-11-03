@@ -126,6 +126,16 @@ final class SofiaTools
                 ],
             ),
             self::funcao(
+                'listar_usuarios',
+                'Lista os usuários cadastrados no HC Brain (equipe com acesso). Use quando pedirem a lista de usuários/colaboradores ou antes de montar um PDF com eles.',
+                [
+                    'termo' => ['type' => 'string', 'description' => 'Trecho do nome ou e-mail.'],
+                    'perfil' => ['type' => 'string', 'enum' => User::PERFIS, 'description' => 'Filtrar por perfil.'],
+                    'area' => ['type' => 'string', 'enum' => User::AREAS, 'description' => 'Filtrar por área.'],
+                    'status' => ['type' => 'string', 'enum' => User::STATUS, 'description' => 'Filtrar por status. Padrão: todos.'],
+                ],
+            ),
+            self::funcao(
                 'criar_usuario',
                 'Cadastra uma pessoa no HC Brain (acesso ao sistema). Use quando pedirem para criar/cadastrar um usuário.',
                 [
@@ -139,8 +149,17 @@ final class SofiaTools
                 ['nome', 'email'],
             ),
             self::funcao(
+                'gerar_pdf_usuarios',
+                'Gera um PDF novo com a lista atual de usuários do HC Brain e grava em Documentos. Use quando pedirem PDF/lista/relatório dos usuários para baixar. Não use entregar_documento nem diga que não consegue acessar a lista.',
+                [
+                    'nome' => ['type' => 'string', 'description' => 'Nome do PDF (sem extensão). Padrão: Lista de Usuários.'],
+                    'status' => ['type' => 'string', 'enum' => User::STATUS, 'description' => 'Filtrar por status. Padrão: todos.'],
+                    'pasta' => ['type' => 'string', 'description' => 'Pasta de destino. Se omitida, usa/cria "Sofia".'],
+                ],
+            ),
+            self::funcao(
                 'entregar_documento',
-                'Localiza um arquivo da base (PDF, planilha, doc…) e devolve o link de download pronto para colar na resposta. Use quando pedirem o PDF, o arquivo ou o link do documento.',
+                'Localiza um arquivo que JÁ existe na base e devolve o link de download. Use só quando pedirem um documento existente pelo nome. Não use para criar lista/relatório novo em PDF.',
                 [
                     'termo' => ['type' => 'string', 'description' => 'Trecho do nome do arquivo.'],
                     'pasta' => ['type' => 'string', 'description' => 'Pasta opcional para afunilar (Comercial, Projetos…).'],
@@ -149,7 +168,7 @@ final class SofiaTools
             ),
             self::funcao(
                 'criar_documento',
-                'Cria um arquivo PDF na base de Documentos do HC Brain. Use quando pedirem para redigir/salvar lista, checklist, ata, roteiro, relatório ou material escrito para baixar. O arquivo gerado é sempre .pdf.',
+                'Cria um arquivo PDF novo na base de Documentos. Use para checklist, ata, roteiro ou texto que você já tenha. Para PDF da lista de usuários, prefira gerar_pdf_usuarios.',
                 [
                     'nome' => ['type' => 'string', 'description' => 'Nome do documento (sem extensão). O arquivo será nome.pdf.'],
                     'conteudo' => ['type' => 'string', 'description' => 'Texto completo que vai dentro do PDF.'],
@@ -216,7 +235,9 @@ final class SofiaTools
                 'buscar_documentos' => self::buscarDocumentos($argumentos),
                 'buscar_pessoas' => self::buscarPessoas($argumentos),
                 'buscar_treinamentos' => self::buscarTreinamentos($argumentos),
+                'listar_usuarios' => self::listarUsuarios($argumentos),
                 'criar_usuario' => self::criarUsuario($argumentos),
+                'gerar_pdf_usuarios' => self::gerarPdfUsuarios($argumentos),
                 'entregar_documento' => self::entregarDocumento($argumentos),
                 'criar_documento' => self::criarDocumento($argumentos),
                 'criar_imagem' => self::criarImagem($argumentos),
@@ -745,6 +766,109 @@ final class SofiaTools
             'caminho' => Telas::caminho('treinamentos'),
             'total' => $encontrados->count(),
             'treinamentos' => $encontrados->map(fn (Treinamento $item) => self::resumoTreinamento($item))->all(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $argumentos
+     * @return array<string, mixed>
+     */
+    private static function listarUsuarios(array $argumentos): array
+    {
+        $consulta = User::query()->orderBy('name');
+
+        $termo = self::texto($argumentos, 'termo');
+        if ($termo !== '') {
+            $consulta->where(function (Builder $q) use ($termo): void {
+                $q->where('name', 'like', self::contem($termo))
+                    ->orWhere('email', 'like', self::contem($termo));
+            });
+        }
+
+        $perfil = self::texto($argumentos, 'perfil');
+        if ($perfil !== '') {
+            if (! in_array($perfil, User::PERFIS, true)) {
+                return ['erro' => 'Perfil inválido.', 'perfis' => User::PERFIS];
+            }
+            $consulta->where('perfil', $perfil);
+        }
+
+        $area = self::texto($argumentos, 'area');
+        if ($area !== '') {
+            if (! in_array($area, User::AREAS, true)) {
+                return ['erro' => 'Área inválida.', 'areas' => User::AREAS];
+            }
+            $consulta->where('area', $area);
+        }
+
+        $status = self::texto($argumentos, 'status');
+        if ($status !== '') {
+            if (! in_array($status, User::STATUS, true)) {
+                return ['erro' => 'Status inválido.', 'status' => User::STATUS];
+            }
+            $consulta->where('status', $status);
+        }
+
+        $total = (clone $consulta)->count();
+        $usuarios = $consulta->limit(200)->get(['id', 'name', 'email', 'perfil', 'area', 'status']);
+
+        return [
+            'caminho' => Telas::caminho('usuarios'),
+            'total' => $total,
+            'mostradas' => $usuarios->count(),
+            'instrucao' => 'Para entregar a lista em PDF novo, chame gerar_pdf_usuarios. Não diga que não consegue acessar os usuários.',
+            'usuarios' => $usuarios->map(fn (User $usuario) => [
+                'id' => $usuario->id,
+                'nome' => $usuario->name,
+                'email' => $usuario->email,
+                'perfil' => $usuario->perfil,
+                'area' => $usuario->area,
+                'status' => $usuario->status,
+            ])->all(),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $argumentos
+     * @return array<string, mixed>
+     */
+    private static function gerarPdfUsuarios(array $argumentos): array
+    {
+        $lista = self::listarUsuarios($argumentos);
+        if (isset($lista['erro'])) {
+            return $lista;
+        }
+
+        /** @var list<array{nome: string, email: string, perfil: string, area: string, status: string}> $usuarios */
+        $usuarios = $lista['usuarios'] ?? [];
+        if ($usuarios === []) {
+            return [
+                'erro' => 'Não há usuários na base com esse filtro.',
+                'caminho' => Telas::caminho('usuarios'),
+            ];
+        }
+
+        $linhas = [];
+        foreach ($usuarios as $indice => $usuario) {
+            $n = $indice + 1;
+            $linhas[] = "{$n}. {$usuario['nome']} · {$usuario['email']} · {$usuario['perfil']} · {$usuario['area']} · {$usuario['status']}";
+        }
+
+        $nome = self::texto($argumentos, 'nome') ?: 'Lista de Usuários';
+        $conteudo = "Total: {$lista['total']}\n\n".implode("\n", $linhas);
+
+        $gravado = self::gravarNaBaseDeDocumentos(
+            nome: $nome,
+            extensao: 'pdf',
+            bytes: TextoPdf::de($nome, $conteudo),
+            mime: 'application/pdf',
+            pastaNome: self::texto($argumentos, 'pasta'),
+        );
+
+        return [
+            ...$gravado,
+            'total_usuarios' => $lista['total'],
+            'instrucao' => 'Mostre markdown_download na resposta. O arquivo é .pdf.',
         ];
     }
 
