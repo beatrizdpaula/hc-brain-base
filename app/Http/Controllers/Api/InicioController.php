@@ -9,6 +9,7 @@ use App\Models\Reuniao;
 use App\Support\Contadores;
 use App\Support\GoogleAgenda;
 use App\Support\Telas;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 
@@ -32,13 +33,15 @@ class InicioController extends Controller
     }
 
     /**
-     * Reuniões de hoje em diante — agenda, não histórico.
+     * Só o que ainda vai acontecer: Agendada e com data/hora no futuro.
+     * Concluída/Cancelada e o que já passou hoje ficam de fora.
      *
      * @return list<array<string, string>>
      */
     private function proximasReunioes(): array
     {
-        $hoje = now(GoogleAgenda::FUSO)->toDateString();
+        $agora = now(GoogleAgenda::FUSO);
+        $hoje = $agora->toDateString();
 
         return Reuniao::query()
             ->with('empresa')
@@ -46,8 +49,11 @@ class InicioController extends Controller
             ->where('status', 'Agendada')
             ->orderBy('data')
             ->orderBy('horario')
-            ->limit(self::LIMITE)
+            ->limit(self::LIMITE * 4)
             ->get()
+            ->filter(fn (Reuniao $reuniao) => $this->aindaVaiAcontecer($reuniao, $agora))
+            ->take(self::LIMITE)
+            ->values()
             ->map(fn (Reuniao $reuniao) => Collection::make(
                 $this->itemDeReuniao($reuniao, proxima: true),
             )->except('ordem')->all())
@@ -55,8 +61,8 @@ class InicioController extends Controller
     }
 
     /**
-     * Histórico recente: reuniões já ocorridas, projetos e documentos
-     * atualizados. Reunião futura não entra aqui.
+     * Histórico recente: reuniões já ocorridas ou concluídas, projetos e
+     * documentos atualizados. Reunião futura agendada não entra aqui.
      *
      * @return list<array<string, string>>
      */
@@ -66,8 +72,13 @@ class InicioController extends Controller
 
         $reunioes = Reuniao::query()
             ->with('empresa')
-            ->whereDate('data', '<', $hoje)
+            ->where(function ($consulta) use ($hoje): void {
+                $consulta->whereDate('data', '<', $hoje)
+                    ->orWhere('status', 'Concluída');
+            })
+            ->where('status', '!=', 'Cancelada')
             ->orderByDesc('data')
+            ->orderByDesc('horario')
             ->limit(self::LIMITE)
             ->get()
             ->map(fn (Reuniao $reuniao) => $this->itemDeReuniao($reuniao, proxima: false));
@@ -132,5 +143,37 @@ class InicioController extends Controller
             'destino' => 'reunioes',
             'caminho' => Telas::caminho('reunioes').'?reuniao='.$reuniao->id,
         ];
+    }
+
+    /** Mesma regra da agenda: sem horário no dia de hoje ainda conta como por vir. */
+    private function aindaVaiAcontecer(Reuniao $reuniao, CarbonInterface $agora): bool
+    {
+        if ($reuniao->status !== 'Agendada') {
+            return false;
+        }
+
+        $dia = $reuniao->data->timezone(GoogleAgenda::FUSO)->toDateString();
+        $hoje = $agora->toDateString();
+
+        if ($dia > $hoje) {
+            return true;
+        }
+
+        if ($dia < $hoje) {
+            return false;
+        }
+
+        if (! is_string($reuniao->horario) || $reuniao->horario === '') {
+            return true;
+        }
+
+        if (! preg_match('/^(\d{1,2}):(\d{2})/', $reuniao->horario, $partes)) {
+            return true;
+        }
+
+        $minutosDaReuniao = ((int) $partes[1]) * 60 + (int) $partes[2];
+        $minutosAgora = $agora->hour * 60 + $agora->minute;
+
+        return $minutosDaReuniao > $minutosAgora;
     }
 }

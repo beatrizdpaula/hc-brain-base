@@ -190,6 +190,19 @@ class ApiTest extends TestCase
             'resumo' => 'Já concluída — fora de Próximas reuniões.',
         ]);
 
+        $concluidaHoje = Reuniao::query()->create([
+            'titulo' => 'Alinhamento com Matheus',
+            'tipo' => 'Alinhamento',
+            'data' => $hoje->toDateString(),
+            'horario' => '08:00',
+            'responsavel' => 'Beatriz Andrade',
+            'participantes' => [],
+            'decisoes' => [],
+            'proximos_passos' => [],
+            'status' => 'Concluída',
+            'resumo' => 'Concluída hoje de manhã.',
+        ]);
+
         Reuniao::query()->create([
             'titulo' => 'Alinhamento passado HC',
             'tipo' => 'Alinhamento',
@@ -219,12 +232,20 @@ class ApiTest extends TestCase
             'Reunião concluída não deve aparecer em Próximas reuniões.',
         );
         $this->assertFalse(
+            $proximas->contains(fn (array $item) => str_contains($item['caminho'] ?? '', 'reuniao='.$concluidaHoje->id)),
+            'Reunião concluída de hoje não deve aparecer em Próximas reuniões.',
+        );
+        $this->assertFalse(
             $atividade->contains(fn (array $item) => str_contains($item['titulo'], 'Alinhamento futuro HC')),
             'A reunião futura não deve aparecer na atividade recente.',
         );
         $this->assertTrue(
             $atividade->contains(fn (array $item) => str_contains((string) ($item['detalhe'] ?? ''), 'Pertence ao histórico recente.')),
             'A reunião passada deve aparecer na atividade recente.',
+        );
+        $this->assertTrue(
+            $atividade->contains(fn (array $item) => str_contains($item['caminho'] ?? '', 'reuniao='.$concluidaHoje->id)),
+            'A reunião concluída de hoje deve aparecer na atividade recente.',
         );
     }
 
