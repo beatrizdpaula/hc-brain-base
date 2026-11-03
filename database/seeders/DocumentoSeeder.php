@@ -49,6 +49,7 @@ class DocumentoSeeder extends Seeder
                 'nome' => $nome,
                 'extensao' => $extensao,
                 'arquivo' => $caminho,
+                'conteudo' => $conteudo,
                 'tamanho' => strlen($conteudo),
                 'mime' => 'text/plain',
             ]);

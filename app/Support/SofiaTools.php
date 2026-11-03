@@ -1158,6 +1158,7 @@ final class SofiaTools
             'nome' => trim($nome) !== '' ? trim($nome) : 'Arquivo Sofia',
             'extensao' => $extensao,
             'arquivo' => $caminho,
+            'conteudo' => $bytes,
             'tamanho' => strlen($bytes),
             'mime' => $mime,
             'enviado_por' => auth()->id(),

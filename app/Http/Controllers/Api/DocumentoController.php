@@ -17,7 +17,11 @@ class DocumentoController extends Controller
 {
     public function index(): JsonResponse
     {
-        $documentos = Documento::with('pasta')->orderByDesc('updated_at')->get();
+        $documentos = Documento::query()
+            ->with('pasta')
+            ->select(Documento::COLUNAS_LISTA)
+            ->orderByDesc('updated_at')
+            ->get();
 
         return response()->json([
             // A contagem de cada pasta é contada de verdade, então enviar ou
@@ -39,6 +43,7 @@ class DocumentoController extends Controller
     {
         $arquivo = $request->file('arquivo');
         $extensao = strtolower($arquivo->getClientOriginalExtension());
+        $bytes = $arquivo->get();
 
         $caminho = $arquivo->store(
             'documentos/'.$request->integer('pastaId'),
@@ -52,6 +57,7 @@ class DocumentoController extends Controller
                 : pathinfo($arquivo->getClientOriginalName(), PATHINFO_FILENAME),
             'extensao' => $extensao,
             'arquivo' => $caminho,
+            'conteudo' => $bytes,
             'tamanho' => $arquivo->getSize(),
             'mime' => $arquivo->getClientMimeType(),
             'enviado_por' => $request->user()->id,
@@ -83,14 +89,30 @@ class DocumentoController extends Controller
     /**
      * O arquivo sai pelo Laravel, e não por uma URL pública do disco, porque
      * documento da HC não deve ser acessível a quem não está na sessão.
+     * Se o disco do contêiner sumiu no deploy, serve o conteúdo guardado na base.
      */
     public function download(Documento $documento): StreamedResponse
     {
-        abort_if($documento->arquivo === null, 404, 'Este registro não tem arquivo anexado.');
+        $bytes = $documento->lerBytes();
+        abort_if($bytes === null, 404, 'Este registro não tem arquivo anexado.');
 
         $disco = Storage::disk(config('hc.documentos.disco'));
-        abort_unless($disco->exists($documento->arquivo), 404, 'O arquivo não está mais no armazenamento.');
+        if (
+            is_string($documento->arquivo)
+            && $documento->arquivo !== ''
+            && ! $disco->exists($documento->arquivo)
+        ) {
+            $disco->put($documento->arquivo, $bytes);
+        }
 
-        return $disco->download($documento->arquivo, $documento->nomeDoArquivo());
+        return response()->streamDownload(
+            function () use ($bytes): void {
+                echo $bytes;
+            },
+            $documento->nomeDoArquivo(),
+            [
+                'Content-Type' => $documento->mime ?: 'application/octet-stream',
+            ],
+        );
     }
 }

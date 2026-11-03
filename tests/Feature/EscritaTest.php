@@ -276,6 +276,36 @@ class EscritaTest extends TestCase
             ->assertDownload($documento->nomeDoArquivo());
     }
 
+    public function test_download_funciona_quando_o_disco_sumiu_mas_a_base_tem_o_conteudo(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $pasta = Pasta::firstOrFail();
+        $caminho = 'documentos/'.$pasta->id.'/arquivo-perdido.pdf';
+        $bytes = "%PDF-1.4\nlista de usuarios\n%%EOF\n";
+
+        $documento = Documento::create([
+            'pasta_id' => $pasta->id,
+            'nome' => 'Lista de Usuários',
+            'extensao' => 'pdf',
+            'arquivo' => $caminho,
+            'conteudo' => $bytes,
+            'tamanho' => strlen($bytes),
+            'mime' => 'application/pdf',
+            'enviado_por' => User::firstOrFail()->id,
+        ]);
+
+        Storage::disk(config('hc.documentos.disco'))->assertMissing($caminho);
+
+        $resposta = $this->autenticado()
+            ->get("/api/documentos/{$documento->id}/arquivo")
+            ->assertOk();
+
+        $this->assertStringContainsString('attachment', (string) $resposta->headers->get('content-disposition'));
+        $this->assertSame($bytes, $resposta->streamedContent());
+        Storage::disk(config('hc.documentos.disco'))->assertExists($caminho);
+    }
+
     public function test_excluir_documento_apaga_o_arquivo_do_disco(): void
     {
         $documento = Documento::whereNotNull('arquivo')->firstOrFail();

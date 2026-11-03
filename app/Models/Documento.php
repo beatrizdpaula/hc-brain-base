@@ -3,14 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['pasta_id', 'nome', 'extensao', 'arquivo', 'tamanho', 'mime', 'enviado_por'])]
+#[Fillable(['pasta_id', 'nome', 'extensao', 'arquivo', 'conteudo', 'tamanho', 'mime', 'enviado_por'])]
+#[Hidden(['conteudo'])]
 class Documento extends Model
 {
     protected $table = 'documentos';
+
+    /**
+     * Colunas da listagem — o blob fica de fora para não carregar megabytes
+     * em cada abertura da tela de Documentos.
+     *
+     * @var list<string>
+     */
+    public const COLUNAS_LISTA = [
+        'id',
+        'pasta_id',
+        'nome',
+        'extensao',
+        'arquivo',
+        'tamanho',
+        'mime',
+        'enviado_por',
+        'created_at',
+        'updated_at',
+    ];
 
     /**
      * Como cada extensão é agrupada na tela. O filtro de tipo e o ícone saem
@@ -49,6 +70,30 @@ class Documento extends Model
     public function nomeDoArquivo(): string
     {
         return "{$this->nome}.{$this->extensao}";
+    }
+
+    /**
+     * Bytes do arquivo: disco primeiro; se o contêiner perdeu o storage
+     * (deploy), cai no conteúdo guardado na base.
+     */
+    public function lerBytes(): ?string
+    {
+        if (is_string($this->arquivo) && $this->arquivo !== '') {
+            $disco = Storage::disk(config('hc.documentos.disco'));
+            if ($disco->exists($this->arquivo)) {
+                $doDisco = $disco->get($this->arquivo);
+                if (is_string($doDisco) && $doDisco !== '') {
+                    return $doDisco;
+                }
+            }
+        }
+
+        $conteudo = $this->attributes['conteudo'] ?? null;
+        if (! is_string($conteudo) || $conteudo === '') {
+            $conteudo = $this->newQuery()->whereKey($this->getKey())->value('conteudo');
+        }
+
+        return is_string($conteudo) && $conteudo !== '' ? $conteudo : null;
     }
 
     /** Apaga o arquivo do disco junto com o registro — nada fica órfão lá. */
