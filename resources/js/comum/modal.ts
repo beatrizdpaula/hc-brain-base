@@ -138,11 +138,29 @@ export function montarModais(): void {
     garantirModais();
 }
 
-export function showModal(title: string, text?: string): void {
+export function showModal(
+    title: string,
+    text?: string,
+    acoes: { rotulo: string; href: string; primaria?: boolean }[] = [],
+): void {
     const { generico } = garantirModais();
     porId("modalTitle").textContent = title;
     porId("modalText").textContent =
         text || "Não há detalhe registrado para este item na base.";
+
+    const acoesEl = generico.querySelector(".modal-actions");
+    if (acoesEl) {
+        acoesEl.innerHTML = [
+            ...acoes.map(
+                (acao) => `
+            <a class="${acao.primaria ? "primary" : "secondary"}" href="${escapar(acao.href)}">${escapar(acao.rotulo)}</a>
+          `,
+            ),
+            `<button class="${acoes.some((acao) => acao.primaria) ? "secondary" : "primary"}" id="modalOk">Fechar</button>`,
+        ].join("");
+        porId("modalOk").addEventListener("click", closeModal);
+    }
+
     abrir(generico);
 }
 

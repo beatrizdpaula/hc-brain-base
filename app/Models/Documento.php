@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['pasta_id', 'nome', 'extensao', 'arquivo', 'conteudo', 'tamanho', 'mime', 'enviado_por'])]
+#[Fillable(['pasta_id', 'nome', 'extensao', 'arquivo', 'conteudo', 'tamanho', 'mime', 'demonstrativo', 'enviado_por'])]
 #[Hidden(['conteudo'])]
 class Documento extends Model
 {
@@ -28,6 +28,7 @@ class Documento extends Model
         'arquivo',
         'tamanho',
         'mime',
+        'demonstrativo',
         'enviado_por',
         'created_at',
         'updated_at',
@@ -48,7 +49,10 @@ class Documento extends Model
 
     protected function casts(): array
     {
-        return ['tamanho' => 'integer'];
+        return [
+            'tamanho' => 'integer',
+            'demonstrativo' => 'boolean',
+        ];
     }
 
     public function pasta(): BelongsTo

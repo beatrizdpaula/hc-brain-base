@@ -195,11 +195,17 @@ class ApiTest extends TestCase
             ->assertJsonFragment([
                 'type' => 'Documento',
                 'title' => $documento->nomeDoArquivo(),
+                'demonstrativo' => true,
             ]);
 
         $this->assertNotEmpty($resposta->json());
         $this->assertContains('Documento', collect($resposta->json())->pluck('type')->all());
         $this->assertContains('Pessoa', collect($resposta->json())->pluck('type')->all());
+
+        $proposta = collect($resposta->json())->firstWhere('title', 'Proposta comercial.pdf');
+        $this->assertIsArray($proposta);
+        $this->assertStringContainsString('Demonstrativo', (string) ($proposta['meta'] ?? ''));
+        $this->assertStringContainsString('exemplo', (string) ($proposta['text'] ?? ''));
     }
 
     public function test_documento_criado_entra_na_pesquisa_geral(): void

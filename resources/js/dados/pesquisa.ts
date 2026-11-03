@@ -15,6 +15,10 @@ export interface ResultadoPesquisa {
     meta: string;
     /** Quando existe, o clique abre esse caminho em vez de só um modal. */
     caminho?: string | null;
+    /** Download do arquivo, mesmo quando o clique abre o detalhe demonstrativo. */
+    arquivo?: string | null;
+    /** Material de exemplo da base semeada — não é carteira real. */
+    demonstrativo?: boolean;
 }
 
 /** Escopo escolhido na tela → tipo correspondente no índice. */

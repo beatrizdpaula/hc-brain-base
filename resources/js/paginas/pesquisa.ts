@@ -164,8 +164,8 @@ function renderResultados(): void {
     resultados.innerHTML = encontrados
         .map(
             (item) => `
-        <button type="button" class="result-card" data-result="${escapar(item.title)}" data-caminho="${escapar(item.caminho ?? "")}">
-          <span class="result-type">${escapar(item.type)} • ${escapar(item.area)}</span>
+        <button type="button" class="result-card" data-result="${escapar(item.title)}" data-caminho="${escapar(item.caminho ?? "")}" data-arquivo="${escapar(item.arquivo ?? "")}" data-texto="${escapar(item.text)}" data-meta="${escapar(item.meta)}" data-demonstrativo="${item.demonstrativo ? "1" : "0"}">
+          <span class="result-type">${escapar(item.type)} • ${escapar(item.area)}${item.demonstrativo ? " • Demonstrativo" : ""}</span>
           <h3>${escapar(item.title)}</h3>
           <p>${escapar(item.text)}</p>
           <span class="result-meta">${escapar(item.meta)}</span>
@@ -174,14 +174,33 @@ function renderResultados(): void {
         )
         .join("");
 
-    todos("[data-result]", resultados).forEach((item) => {
-        item.addEventListener("click", () => {
-            const caminho = dado(item, "caminho");
+    todos("[data-result]", resultados).forEach((botao) => {
+        botao.addEventListener("click", () => {
+            if (dado(botao, "demonstrativo") === "1") {
+                const arquivo = dado(botao, "arquivo");
+                showModal(
+                    dado(botao, "result"),
+                    [
+                        "Demonstrativo da base de exemplo do HC Brain.",
+                        dado(botao, "texto"),
+                        dado(botao, "meta"),
+                    ].join("\n\n"),
+                    [
+                        ...(arquivo
+                            ? [{ rotulo: "Baixar PDF de exemplo", href: arquivo, primaria: true }]
+                            : []),
+                        { rotulo: "Abrir Documentos", href: "/documentos" },
+                    ],
+                );
+                return;
+            }
+
+            const caminho = dado(botao, "caminho");
             if (caminho) {
                 window.location.href = caminho;
                 return;
             }
-            showModal(dado(item, "result"));
+            showModal(dado(botao, "result"));
         });
     });
 }

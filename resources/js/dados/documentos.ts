@@ -31,6 +31,7 @@ export interface Documento {
     tamanho: number;
     detalhe: string;
     temArquivo: boolean;
+    demonstrativo?: boolean;
 }
 
 export interface BaseDocumentos {

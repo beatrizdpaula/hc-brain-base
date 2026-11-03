@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 final class IndiceDePesquisa
 {
     /**
-     * @return list<array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null}>
+     * @return list<array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null, demonstrativo: bool}>
      */
     public static function todos(): array
     {
@@ -31,7 +31,9 @@ final class IndiceDePesquisa
             ->all();
     }
 
-    /** @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null}> */
+    /**
+     * @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null, demonstrativo: bool}>
+     */
     private static function documentos(): Collection
     {
         return Documento::query()
@@ -42,19 +44,32 @@ final class IndiceDePesquisa
             ->map(function (Documento $documento): array {
                 $pasta = $documento->pasta?->nome ?: 'Documentos';
                 $quando = $documento->updated_at?->format('d/m/Y') ?? '';
+                $demonstrativo = (bool) $documento->demonstrativo;
+                $ext = strtoupper($documento->extensao);
+                $meta = $demonstrativo
+                    ? 'Demonstrativo • '.$ext.($quando !== '' ? " • {$quando}" : '')
+                    : $ext.($quando !== '' ? " • Atualizado em {$quando}" : '');
 
                 return [
                     'type' => 'Documento',
                     'area' => $pasta,
                     'title' => $documento->nomeDoArquivo(),
-                    'text' => "Arquivo na pasta {$pasta}.",
-                    'meta' => strtoupper($documento->extensao).($quando !== '' ? " • Atualizado em {$quando}" : ''),
-                    'caminho' => route('documentos.arquivo', $documento, false),
+                    'text' => $demonstrativo
+                        ? "Material de exemplo da base demonstrativa do HC Brain (pasta {$pasta}). Não é um documento real da carteira."
+                        : "Arquivo na pasta {$pasta}.",
+                    'meta' => $meta,
+                    'caminho' => $demonstrativo
+                        ? null
+                        : route('documentos.arquivo', $documento, false),
+                    'arquivo' => route('documentos.arquivo', $documento, false),
+                    'demonstrativo' => $demonstrativo,
                 ];
             });
     }
 
-    /** @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null}> */
+    /**
+     * @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null, demonstrativo: bool}>
+     */
     private static function pessoas(): Collection
     {
         $socios = Socio::query()
@@ -76,6 +91,7 @@ final class IndiceDePesquisa
                     'caminho' => $empresa
                         ? Telas::caminho('cliente', ['id' => $empresa->id])
                         : Telas::caminho('clientes'),
+                    'demonstrativo' => false,
                 ];
             });
 
@@ -89,12 +105,15 @@ final class IndiceDePesquisa
                 'text' => "{$usuario->perfil} · {$usuario->email} · {$usuario->status}",
                 'meta' => 'Equipe HC Brain',
                 'caminho' => Telas::caminho('usuarios'),
+                'demonstrativo' => false,
             ]);
 
         return $socios->concat($equipe);
     }
 
-    /** @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null}> */
+    /**
+     * @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null, demonstrativo: bool}>
+     */
     private static function projetos(): Collection
     {
         return Projeto::query()
@@ -107,10 +126,13 @@ final class IndiceDePesquisa
                 'text' => (string) $projeto->descricao,
                 'meta' => 'Status: '.strtolower((string) $projeto->status),
                 'caminho' => Telas::caminho('projetos'),
+                'demonstrativo' => false,
             ]);
     }
 
-    /** @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null}> */
+    /**
+     * @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null, demonstrativo: bool}>
+     */
     private static function reunioes(): Collection
     {
         return Reuniao::query()
@@ -136,11 +158,14 @@ final class IndiceDePesquisa
                     'text' => (string) ($reuniao->resumo ?: 'Reunião cadastrada na agenda HC.'),
                     'meta' => "{$reuniao->tipo} • {$reuniao->status}".($data !== '' ? " • {$data}" : ''),
                     'caminho' => Telas::caminho('reunioes'),
+                    'demonstrativo' => false,
                 ];
             });
     }
 
-    /** @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null}> */
+    /**
+     * @return Collection<int, array{type: string, area: string, title: string, text: string, meta: string, caminho: string|null, demonstrativo: bool}>
+     */
     private static function treinamentos(): Collection
     {
         return Treinamento::query()
@@ -153,6 +178,7 @@ final class IndiceDePesquisa
                 'text' => (string) $item->descricao,
                 'meta' => trim($item->tipo.($item->nivel ? " • {$item->nivel}" : '').' • Sistema de treinamento'),
                 'caminho' => Telas::caminho('treinamentos'),
+                'demonstrativo' => false,
             ]);
     }
 }

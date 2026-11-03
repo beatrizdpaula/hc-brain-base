@@ -24,6 +24,7 @@ class DocumentoResource extends JsonResource
             // texto de tela, montado aqui, não uma coluna que envelhece.
             'detalhe' => $this->detalhe(),
             'temArquivo' => $this->arquivo !== null,
+            'demonstrativo' => (bool) $this->demonstrativo,
             'enviadoPor' => $this->whenLoaded('enviadoPor', fn () => $this->enviadoPor?->name),
         ];
     }
@@ -36,9 +37,16 @@ class DocumentoResource extends JsonResource
             default => 'Atualizado em '.$this->updated_at->format('d/m/Y'),
         };
 
-        return $this->tamanho > 0
-            ? "{$quando} • ".self::peso($this->tamanho)
-            : $quando;
+        $partes = [];
+        if ($this->demonstrativo) {
+            $partes[] = 'Demonstrativo';
+        }
+        $partes[] = $quando;
+        if ($this->tamanho > 0) {
+            $partes[] = self::peso($this->tamanho);
+        }
+
+        return implode(' • ', $partes);
     }
 
     /** Bytes em uma unidade legível, com a vírgula decimal do pt-BR. */

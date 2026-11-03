@@ -4,13 +4,13 @@ namespace Database\Seeders;
 
 use App\Models\Documento;
 use App\Models\Pasta;
+use App\Support\TextoPdf;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * As pastas da HC e alguns arquivos de exemplo. O seeder grava arquivo de
- * verdade no disco configurado: assim baixar, renomear e excluir funcionam em
- * desenvolvimento do mesmo jeito que vão funcionar com um envio real.
+ * As pastas da HC e alguns arquivos de exemplo. São demonstrativos de
+ * propósito: a pesquisa e a tela de Documentos deixam isso explícito.
  */
 class DocumentoSeeder extends Seeder
 {
@@ -21,8 +21,8 @@ class DocumentoSeeder extends Seeder
         ['Comercial', 'Cadastro de clientes', 'pdf'],
         ['Comercial', 'Proposta comercial', 'pdf'],
         ['Comercial', 'Ata reunião Empresa X', 'pdf'],
-        ['Financeiro', 'Relatório mensal', 'xlsx'],
-        ['Operações', 'Fluxos e procedimentos', 'docx'],
+        ['Financeiro', 'Relatório mensal', 'pdf'],
+        ['Operações', 'Fluxos e procedimentos', 'pdf'],
     ];
 
     public function run(): void
@@ -40,18 +40,24 @@ class DocumentoSeeder extends Seeder
         foreach (self::DOCUMENTOS as [$pasta, $nome, $extensao]) {
             $pastaId = $pastas[$pasta]->id;
             $caminho = "documentos/{$pastaId}/".str()->random(40).".{$extensao}";
-            $conteudo = "{$nome} — arquivo de exemplo do HC Brain.\n";
+            $texto = "Material demonstrativo do HC Brain.\n\n"
+                ."Este arquivo é só exemplo da base semeada.\n"
+                ."Não representa um documento real da carteira da HC.\n\n"
+                ."Pasta: {$pasta}\n"
+                ."Nome: {$nome}";
+            $bytes = TextoPdf::de($nome.' (demonstrativo)', $texto);
 
-            $disco->put($caminho, $conteudo);
+            $disco->put($caminho, $bytes);
 
             Documento::create([
                 'pasta_id' => $pastaId,
                 'nome' => $nome,
                 'extensao' => $extensao,
                 'arquivo' => $caminho,
-                'conteudo' => $conteudo,
-                'tamanho' => strlen($conteudo),
-                'mime' => 'text/plain',
+                'conteudo' => $bytes,
+                'tamanho' => strlen($bytes),
+                'mime' => 'application/pdf',
+                'demonstrativo' => true,
             ]);
         }
     }
