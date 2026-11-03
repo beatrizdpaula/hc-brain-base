@@ -243,37 +243,41 @@
     height: 145px;
     border-radius: 50%;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     margin: auto;
-    background: conic-gradient(
-        var(--roxo) 0 39%,
-        var(--azul) 39% 66%,
-        var(--verde) 66% 79%,
-        var(--roxo-claro) 79% 87%,
-        var(--amarelo) 87% 94%,
-        var(--vermelho) 94% 97%,
-        var(--texto-fraco) 97% 100%
-    );
+    background: conic-gradient(var(--roxo) 0deg 360deg);
+    box-shadow: 0 0 0 1px var(--border);
 }
 .commercial-donut::after {
     content: "";
-    width: 78px;
-    height: 78px;
+    position: absolute;
+    inset: 34px;
     border-radius: 50%;
     background: var(--surface);
-    position: absolute;
+    box-shadow: 0 0 0 1px var(--border);
 }
-.commercial-donut::before {
-    content: "488\A leads";
-    white-space: pre;
+.commercial-donut-center {
+    position: absolute;
+    inset: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
     text-align: center;
+    overflow: hidden;
+    z-index: 2;
+}
+.commercial-donut-center strong {
     color: var(--texto-forte);
     font-size: var(--texto-sm);
-    line-height: 1.35;
-    position: relative;
-    z-index: 2;
+    font-weight: 700;
+    line-height: 1.15;
+}
+.commercial-donut-center span {
+    color: var(--texto-fraco);
+    font-size: var(--texto-xs);
+    line-height: 1.2;
 }
 .commercial-legend {
     display: flex;

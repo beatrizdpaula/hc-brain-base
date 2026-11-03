@@ -67,7 +67,12 @@
           </div>
         </div>
         <div class="commercial-origin-layout">
-          <div class="commercial-donut" id="commercialOriginDonut"></div>
+          <div class="commercial-donut" id="commercialOriginDonut">
+            <div class="commercial-donut-center">
+              <strong id="commercialOriginTotal">0</strong>
+              <span>leads</span>
+            </div>
+          </div>
           <div class="commercial-legend" id="commercialOriginLegend"></div>
         </div>
       </div>

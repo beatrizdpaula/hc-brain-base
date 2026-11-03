@@ -167,6 +167,23 @@ class ApiTest extends TestCase
             ->assertJsonStructure(['leads', 'closed', 'revenue', 'monthly', 'origins', 'losses', 'team']);
     }
 
+    public function test_origens_do_comercial_somam_os_leads_do_periodo(): void
+    {
+        foreach (['2026-07', '2026-08', '2026-09'] as $periodo) {
+            $resposta = $this->autenticado()
+                ->getJson("/api/comercial/{$periodo}")
+                ->assertOk()
+                ->assertJsonPath('periodo', $periodo);
+
+            $somaOrigens = collect($resposta->json('origins'))->sum(fn (array $origem) => $origem[1]);
+            $this->assertSame(
+                $resposta->json('leads'),
+                $somaOrigens,
+                "Origens de {$periodo} devem somar os leads do período.",
+            );
+        }
+    }
+
     /** O período vem de um <select>, então um valor desconhecido cai no mais recente. */
     public function test_periodo_comercial_desconhecido_cai_no_mais_recente(): void
     {

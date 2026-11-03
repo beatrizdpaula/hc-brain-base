@@ -114,6 +114,10 @@ function renderComercial(dados: IndicadoresComerciais): void {
         .join("")}</div>
   `;
 
+    const totalOrigens = dados.origins.reduce((soma, [, valor]) => soma + valor, 0);
+    const totalDonut = totalOrigens || dados.leads;
+
+    porId("commercialOriginTotal").textContent = String(totalDonut);
     porId("commercialOriginLegend").innerHTML = dados.origins
         .map(
             ([nome, valor, cor]) => `
@@ -122,10 +126,9 @@ function renderComercial(dados: IndicadoresComerciais): void {
         )
         .join("");
 
-    porId("commercialOriginDonut").style.background = gradienteOrigens(
-        dados.origins,
-        dados.leads,
-    );
+    porId("commercialOriginDonut").style.background = totalDonut
+        ? gradienteOrigens(dados.origins, totalDonut)
+        : "var(--surface-alto)";
 
     const maximoPerda = Math.max(...dados.losses.map(([, valor]) => valor), 1);
     porId("commercialLostTotal").textContent = plural(perdas, "perda", "perdas");
