@@ -41,10 +41,21 @@ if (detalhe) {
     renderFinanceiro(empresa, reunioes.length, financeiro);
     desenharIcones();
 
-    // O atalho para Reuniões já leva o filtro da empresa aplicado.
+    // Abre o histórico dessa empresa sem herdar busca, status, período etc.
     porId("verTodasReunioesEmpresa").addEventListener("click", () => {
-        atualizarSecao("reunioes", { empresa: empresa.nome });
-        window.location.href = caminhoDaPagina("reunioes");
+        atualizarSecao("reunioes", {
+            busca: "",
+            tipo: "Todas",
+            empresa: empresa.nome,
+            status: "Todos",
+            responsavel: "Todos",
+            de: "",
+            ate: "",
+            visualizacao: "list",
+            ancoraCalendario: null,
+        });
+        window.location.href =
+            `${caminhoDaPagina("reunioes")}?empresa=${encodeURIComponent(empresa.nome)}`;
     });
 }
 

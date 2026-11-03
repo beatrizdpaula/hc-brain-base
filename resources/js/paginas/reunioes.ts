@@ -2,8 +2,8 @@
    TELA REUNIÕES
    Agenda com resumo do recorte, movimento por dia e o histórico
    em lista, cartões ou calendário. Os filtros vivem no estado
-   compartilhado, então "ver reuniões desta empresa" vindo do
-   detalhe do cliente já chega com o recorte aplicado.
+   compartilhado. O atalho "ver reuniões desta empresa" limpa os
+   outros filtros e aplica só a empresa, para o histórico aparecer.
    ========================================================= */
 
 import {
@@ -1244,6 +1244,34 @@ function atualizarTela(): void {
 observarEstado(["reunioes"], atualizarTela);
 
 /**
+ * Link do detalhe da empresa: /reunioes?empresa=Nome abre o histórico
+ * dela sem os filtros anteriores (status, período, busca…) esconderem nada.
+ */
+function aplicarEmpresaDaUrl(): boolean {
+    const params = new URLSearchParams(window.location.search);
+    const empresa = params.get("empresa")?.trim() ?? "";
+    if (empresa === "") {
+        return false;
+    }
+
+    const limpa = new URL(window.location.href);
+    limpa.searchParams.delete("empresa");
+    history.replaceState(null, "", limpa.pathname + limpa.search + limpa.hash);
+
+    const existe = [...empresaFilter.options].some((opcao) => opcao.value === empresa);
+    atualizarSecao("reunioes", {
+        ...SEM_FILTROS,
+        empresa: existe ? empresa : SEM_FILTROS.empresa,
+        de: "",
+        ate: "",
+        visualizacao: "list",
+        ancoraCalendario: null,
+    });
+    atualizarTela();
+    return true;
+}
+
+/**
  * Link da Sofia: /reunioes?reuniao=123 leva ao card dessa reunião,
  * destaca ele na grade e abre o detalhe.
  */
@@ -1292,4 +1320,6 @@ function destacarEAbrirReuniao(id: number, reuniao: Reuniao): void {
 }
 
 atualizarTela();
-abrirReuniaoDaUrl();
+if (!aplicarEmpresaDaUrl()) {
+    abrirReuniaoDaUrl();
+}
