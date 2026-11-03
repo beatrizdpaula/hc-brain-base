@@ -29,8 +29,18 @@ class SofiaChatTest extends TestCase
         parent::setUp();
 
         $this->seed();
-        config()->set('hc.sofia.chave', null);
+        $this->desligarSofia();
         Cache::flush();
+    }
+
+    /** Zera todas as chaves: o .env local não pode “ligar” a Sofia nos testes. */
+    private function desligarSofia(): void
+    {
+        config()->set('hc.sofia.chave', null);
+
+        foreach (array_keys(config('hc.sofia.provedores', [])) as $provedor) {
+            config()->set("hc.sofia.provedores.{$provedor}.chave", null);
+        }
     }
 
     private function autenticado(): static
@@ -44,6 +54,7 @@ class SofiaChatTest extends TestCase
     private function simularChat(string $textoFinal, ?array $toolCall = null): void
     {
         config()->set('hc.sofia.chave', 'chave-de-teste');
+        config()->set('hc.sofia.provedores.openai.chave', 'chave-de-teste');
         Http::preventStrayRequests();
         Http::fake([
             'https://api.openai.com/v1/chat/completions' => function (Request $request) use ($textoFinal, $toolCall) {
@@ -803,6 +814,7 @@ class SofiaChatTest extends TestCase
     public function test_sofia_avisa_quando_o_modelo_falha(): void
     {
         config()->set('hc.sofia.chave', 'chave-de-teste');
+        config()->set('hc.sofia.provedores.openai.chave', 'chave-de-teste');
         Http::preventStrayRequests();
         Http::fake([
             'https://api.openai.com/v1/chat/completions' => Http::response(['error' => 'falhou'], 500),

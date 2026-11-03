@@ -159,7 +159,7 @@ function renderGrid(): void {
     todos(".document-card", grid).forEach((card) => {
         card.addEventListener("click", (evento) => {
             if (alvoMaisProximo(evento, "[data-opcoes]")) return;
-            baixar(Number(dado(card, "documento")));
+            void baixar(Number(dado(card, "documento")));
         });
     });
 
@@ -177,8 +177,11 @@ function porIdDoDocumento(id: number): Documento | undefined {
     return documentos.find((item) => item.id === id);
 }
 
-/** O download é uma navegação: o Laravel responde com o arquivo em anexo. */
-function baixar(id: number): void {
+/**
+ * Baixa via fetch (mesma sessão), sem navegar a página inteira — se o
+ * arquivo sumiu do disco/base, a pessoa fica em Documentos com um aviso.
+ */
+async function baixar(id: number): Promise<void> {
     const documento = porIdDoDocumento(id);
     if (!documento) return;
 
@@ -190,7 +193,38 @@ function baixar(id: number): void {
         return;
     }
 
-    window.location.href = enderecoDoArquivo(id);
+    try {
+        const resposta = await fetch(enderecoDoArquivo(id), {
+            credentials: "same-origin",
+            headers: { Accept: "application/pdf,application/octet-stream,*/*" },
+        });
+
+        if (!resposta.ok) {
+            showModal(
+                documento.exibicao,
+                resposta.status === 404
+                    ? "Não encontrei o arquivo no servidor. Peça à Sofia para gerar de novo, ou envie o PDF outra vez."
+                    : "Não consegui abrir este arquivo agora. Tente de novo em instantes.",
+            );
+            return;
+        }
+
+        const blob = await resposta.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = documento.exibicao;
+        link.rel = "noopener";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    } catch {
+        showModal(
+            documento.exibicao,
+            "Falha de rede ao baixar o arquivo. Confira a conexão e tente de novo.",
+        );
+    }
 }
 
 function abrirOpcoes(id: number): void {

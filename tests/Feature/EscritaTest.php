@@ -308,6 +308,45 @@ class EscritaTest extends TestCase
         Storage::disk(config('hc.documentos.disco'))->assertExists($caminho);
     }
 
+    public function test_download_aceita_conteudo_bytea_como_stream_do_postgres(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $pasta = Pasta::firstOrFail();
+        $caminho = 'documentos/'.$pasta->id.'/stream-postgres.pdf';
+        $bytes = "%PDF-1.4\nstream postgres\n%%EOF\n";
+
+        $documento = Documento::create([
+            'pasta_id' => $pasta->id,
+            'nome' => 'Stream Postgres',
+            'extensao' => 'pdf',
+            'arquivo' => $caminho,
+            'conteudo' => $bytes,
+            'tamanho' => strlen($bytes),
+            'mime' => 'application/pdf',
+            'enviado_por' => User::firstOrFail()->id,
+        ]);
+
+        Storage::disk(config('hc.documentos.disco'))->delete($caminho);
+
+        $stream = fopen('php://memory', 'r+');
+        $this->assertNotFalse($stream);
+        fwrite($stream, $bytes);
+        rewind($stream);
+
+        $documento->setRawAttributes([
+            ...$documento->getAttributes(),
+            'conteudo' => $stream,
+        ], true);
+
+        $this->assertSame($bytes, $documento->lerBytes());
+
+        $this->autenticado()
+            ->get("/api/documentos/{$documento->id}/arquivo")
+            ->assertOk()
+            ->assertDownload($documento->nomeDoArquivo());
+    }
+
     public function test_excluir_documento_apaga_o_arquivo_do_disco(): void
     {
         $documento = Documento::whereNotNull('arquivo')->firstOrFail();

@@ -20,6 +20,9 @@ class SofiaConversaTest extends TestCase
 
         $this->seed();
         config()->set('hc.sofia.chave', null);
+        foreach (array_keys(config('hc.sofia.provedores', [])) as $provedor) {
+            config()->set("hc.sofia.provedores.{$provedor}.chave", null);
+        }
         Cache::flush();
     }
 
@@ -44,6 +47,7 @@ class SofiaConversaTest extends TestCase
     public function test_pergunta_grava_o_chat_de_quem_perguntou(): void
     {
         config()->set('hc.sofia.chave', 'chave-de-teste');
+        config()->set('hc.sofia.provedores.openai.chave', 'chave-de-teste');
         Http::preventStrayRequests();
         Http::fake([
             'https://api.openai.com/v1/chat/completions' => Http::response([
@@ -121,6 +125,7 @@ class SofiaConversaTest extends TestCase
     public function test_prompt_traz_quem_pergunta_e_o_modo(): void
     {
         config()->set('hc.sofia.chave', 'chave-de-teste');
+        config()->set('hc.sofia.provedores.openai.chave', 'chave-de-teste');
         Http::preventStrayRequests();
         Http::fake([
             'https://api.openai.com/v1/chat/completions' => Http::response([

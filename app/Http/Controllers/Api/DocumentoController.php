@@ -102,7 +102,11 @@ class DocumentoController extends Controller
             && $documento->arquivo !== ''
             && ! $disco->exists($documento->arquivo)
         ) {
-            $disco->put($documento->arquivo, $bytes);
+            try {
+                $disco->put($documento->arquivo, $bytes);
+            } catch (\Throwable) {
+                // Disco efêmero/cheio: ainda assim entrega os bytes da base.
+            }
         }
 
         return response()->streamDownload(

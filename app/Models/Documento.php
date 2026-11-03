@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 #[Hidden(['conteudo'])]
 class Documento extends Model
 {
+    private const PREFIXO_BASE64 = 'hc64:';
+
     protected $table = 'documentos';
 
     /**
@@ -79,6 +82,10 @@ class Documento extends Model
     /**
      * Bytes do arquivo: disco primeiro; se o contêiner perdeu o storage
      * (deploy), cai no conteúdo guardado na base.
+     *
+     * No Postgres o BYTEA chega como resource; sem normalizar o download
+     * virava 404 mesmo com bytes na base. Gravamos em base64 (`hc64:`)
+     * para o blob sobreviver em qualquer driver.
      */
     public function lerBytes(): ?string
     {
@@ -87,17 +94,76 @@ class Documento extends Model
             if ($disco->exists($this->arquivo)) {
                 $doDisco = $disco->get($this->arquivo);
                 if (is_string($doDisco) && $doDisco !== '') {
+                    $this->garantirConteudoNaBase($doDisco);
+
                     return $doDisco;
                 }
             }
         }
 
-        $conteudo = $this->attributes['conteudo'] ?? null;
-        if (! is_string($conteudo) || $conteudo === '') {
-            $conteudo = $this->newQuery()->whereKey($this->getKey())->value('conteudo');
+        if (array_key_exists('conteudo', $this->attributes)) {
+            $conteudo = $this->conteudo;
+            if (is_string($conteudo) && $conteudo !== '') {
+                return $conteudo;
+            }
         }
 
-        return is_string($conteudo) && $conteudo !== '' ? $conteudo : null;
+        return self::decodificarConteudo(
+            $this->newQuery()->whereKey($this->getKey())->value('conteudo'),
+        );
+    }
+
+    /**
+     * Converte o valor cru da coluna (string, stream ou hc64) em bytes.
+     */
+    public static function decodificarConteudo(mixed $valor): ?string
+    {
+        if (is_resource($valor)) {
+            $lido = stream_get_contents($valor);
+            $valor = is_string($lido) ? $lido : null;
+        }
+
+        if (! is_string($valor) || $valor === '') {
+            return null;
+        }
+
+        if (str_starts_with($valor, self::PREFIXO_BASE64)) {
+            $decoded = base64_decode(substr($valor, strlen(self::PREFIXO_BASE64)), true);
+
+            return $decoded === false ? null : $decoded;
+        }
+
+        return $valor;
+    }
+
+    /**
+     * @return Attribute<string|null, string|null>
+     */
+    protected function conteudo(): Attribute
+    {
+        return Attribute::make(
+            get: fn (mixed $value): ?string => self::decodificarConteudo($value),
+            set: function (?string $value): ?string {
+                if ($value === null || $value === '') {
+                    return null;
+                }
+
+                return self::PREFIXO_BASE64.base64_encode($value);
+            },
+        );
+    }
+
+    /** Se a base ainda não tem o blob, grava a cópia lida do disco. */
+    private function garantirConteudoNaBase(string $bytes): void
+    {
+        if (array_key_exists('conteudo', $this->attributes)) {
+            $atual = $this->conteudo;
+            if (is_string($atual) && $atual !== '') {
+                return;
+            }
+        }
+
+        $this->forceFill(['conteudo' => $bytes])->saveQuietly();
     }
 
     /** Apaga o arquivo do disco junto com o registro — nada fica órfão lá. */
