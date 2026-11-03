@@ -1164,6 +1164,11 @@ final class SofiaTools
             'enviado_por' => auth()->id(),
         ]);
 
+        // Render perde o disco a cada deploy: o blob na base é a cópia que vale.
+        if ($documento->lerBytes() === null) {
+            $documento->guardarBytes($bytes);
+        }
+
         $resumo = self::resumoDocumento($documento->load(['pasta', 'enviadoPor']));
 
         return [

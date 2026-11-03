@@ -339,12 +339,41 @@ class EscritaTest extends TestCase
             'conteudo' => $stream,
         ], true);
 
-        $this->assertSame($bytes, $documento->lerBytes());
+        $this->assertSame($bytes, Documento::decodificarConteudo($stream));
 
         $this->autenticado()
             ->get("/api/documentos/{$documento->id}/arquivo")
             ->assertOk()
             ->assertDownload($documento->nomeDoArquivo());
+    }
+
+    public function test_download_regenera_lista_de_usuarios_quando_o_blob_sumiu(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $pasta = Pasta::firstOrFail();
+        $caminho = 'documentos/'.$pasta->id.'/lista-perdida.pdf';
+
+        $documento = Documento::create([
+            'pasta_id' => $pasta->id,
+            'nome' => 'Informações sobre Usuários Cadastrados',
+            'extensao' => 'pdf',
+            'arquivo' => $caminho,
+            'conteudo' => null,
+            'tamanho' => 961,
+            'mime' => 'application/pdf',
+            'enviado_por' => User::firstOrFail()->id,
+        ]);
+
+        Storage::disk(config('hc.documentos.disco'))->assertMissing($caminho);
+
+        $resposta = $this->autenticado()
+            ->get("/api/documentos/{$documento->id}/arquivo")
+            ->assertOk();
+
+        $this->assertStringContainsString('attachment', (string) $resposta->headers->get('content-disposition'));
+        $this->assertStringStartsWith('%PDF', $resposta->streamedContent());
+        $this->assertNotNull($documento->fresh()->lerBytes());
     }
 
     public function test_excluir_documento_apaga_o_arquivo_do_disco(): void

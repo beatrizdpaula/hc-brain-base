@@ -63,6 +63,11 @@ class DocumentoController extends Controller
             'enviado_por' => $request->user()->id,
         ]);
 
+        // Garante o blob na base mesmo se o cast/coluna falhar no insert.
+        if ($documento->lerBytes() === null && is_string($bytes) && $bytes !== '') {
+            $documento->guardarBytes($bytes);
+        }
+
         return (new DocumentoResource($documento->load('pasta')))
             ->response()
             ->setStatusCode(201);
@@ -93,7 +98,7 @@ class DocumentoController extends Controller
      */
     public function download(Documento $documento): StreamedResponse
     {
-        $bytes = $documento->lerBytes();
+        $bytes = $documento->lerBytes() ?? $documento->tentarRecuperarBytes();
         abort_if($bytes === null, 404, 'Este registro não tem arquivo anexado.');
 
         $disco = Storage::disk(config('hc.documentos.disco'));

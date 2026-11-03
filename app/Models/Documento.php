@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TextoPdf;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -82,10 +83,6 @@ class Documento extends Model
     /**
      * Bytes do arquivo: disco primeiro; se o contêiner perdeu o storage
      * (deploy), cai no conteúdo guardado na base.
-     *
-     * No Postgres o BYTEA chega como resource; sem normalizar o download
-     * virava 404 mesmo com bytes na base. Gravamos em base64 (`hc64:`)
-     * para o blob sobreviver em qualquer driver.
      */
     public function lerBytes(): ?string
     {
@@ -94,23 +91,72 @@ class Documento extends Model
             if ($disco->exists($this->arquivo)) {
                 $doDisco = $disco->get($this->arquivo);
                 if (is_string($doDisco) && $doDisco !== '') {
-                    $this->garantirConteudoNaBase($doDisco);
+                    $this->guardarBytes($doDisco);
 
                     return $doDisco;
                 }
             }
         }
 
-        if (array_key_exists('conteudo', $this->attributes)) {
-            $conteudo = $this->conteudo;
-            if (is_string($conteudo) && $conteudo !== '') {
-                return $conteudo;
-            }
-        }
-
-        return self::decodificarConteudo(
+        $daBase = self::decodificarConteudo(
             $this->newQuery()->whereKey($this->getKey())->value('conteudo'),
         );
+
+        if ($daBase !== null && $daBase !== '') {
+            return $daBase;
+        }
+
+        if (array_key_exists('conteudo', $this->attributes)) {
+            return self::decodificarConteudo($this->attributes['conteudo']);
+        }
+
+        return null;
+    }
+
+    /**
+     * Se o blob sumiu mas o documento é uma lista de usuários da Sofia,
+     * remonta o PDF a partir da base ao vivo e grava de novo.
+     */
+    public function tentarRecuperarBytes(): ?string
+    {
+        if ($this->extensao !== 'pdf' || ! $this->pareceListaDeUsuarios()) {
+            return null;
+        }
+
+        $bytes = self::montarPdfListaUsuarios($this->nome);
+        $this->guardarBytes($bytes);
+
+        return $bytes;
+    }
+
+    /** Grava os bytes na base (e no disco, se houver caminho). */
+    public function guardarBytes(string $bytes): void
+    {
+        if ($bytes === '') {
+            return;
+        }
+
+        $empacotado = self::PREFIXO_BASE64.base64_encode($bytes);
+
+        // Query builder: evita o cast mascarar um save que não chegou na base.
+        static::query()->whereKey($this->getKey())->update([
+            'conteudo' => $empacotado,
+            'tamanho' => strlen($bytes),
+            'updated_at' => now(),
+        ]);
+
+        $this->attributes['conteudo'] = $empacotado;
+        $this->tamanho = strlen($bytes);
+
+        if (! is_string($this->arquivo) || $this->arquivo === '') {
+            return;
+        }
+
+        try {
+            Storage::disk(config('hc.documentos.disco'))->put($this->arquivo, $bytes);
+        } catch (\Throwable) {
+            // Disco efêmero/cheio: a base já tem o arquivo.
+        }
     }
 
     /**
@@ -148,22 +194,40 @@ class Documento extends Model
                     return null;
                 }
 
+                if (str_starts_with($value, self::PREFIXO_BASE64)) {
+                    return $value;
+                }
+
                 return self::PREFIXO_BASE64.base64_encode($value);
             },
         );
     }
 
-    /** Se a base ainda não tem o blob, grava a cópia lida do disco. */
-    private function garantirConteudoNaBase(string $bytes): void
+    private function pareceListaDeUsuarios(): bool
     {
-        if (array_key_exists('conteudo', $this->attributes)) {
-            $atual = $this->conteudo;
-            if (is_string($atual) && $atual !== '') {
-                return;
-            }
-        }
+        $nome = mb_strtolower($this->nome);
 
-        $this->forceFill(['conteudo' => $bytes])->saveQuietly();
+        return str_contains($nome, 'usuário')
+            || str_contains($nome, 'usuario')
+            || str_contains($nome, 'usuários')
+            || str_contains($nome, 'usuarios');
+    }
+
+    public static function montarPdfListaUsuarios(string $titulo): string
+    {
+        $usuarios = User::query()
+            ->orderBy('name')
+            ->get(['name', 'email', 'perfil', 'area', 'status']);
+
+        $linhas = $usuarios->values()->map(function (User $usuario, int $indice): string {
+            $n = $indice + 1;
+
+            return "{$n}. {$usuario->name} · {$usuario->email} · {$usuario->perfil} · {$usuario->area} · {$usuario->status}";
+        })->all();
+
+        $corpo = 'Total: '.$usuarios->count()."\n\n".implode("\n", $linhas);
+
+        return TextoPdf::de($titulo !== '' ? $titulo : 'Lista de Usuários', $corpo);
     }
 
     /** Apaga o arquivo do disco junto com o registro — nada fica órfão lá. */
