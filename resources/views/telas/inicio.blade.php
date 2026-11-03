@@ -47,15 +47,29 @@
     <div class="card-grid" id="atalhosGrid"></div>
 
     <div class="dashboard">
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Atividade recente</h2>
-            <p>Últimas reuniões, projetos e documentos registrados.</p>
+      <div class="dashboard-coluna">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Próximas reuniões</h2>
+              <p>Agenda a partir de hoje — o que ainda vai acontecer.</p>
+            </div>
+          </div>
+          <div class="panel-body" id="proximasReunioes">
+            <div class="estado-carregando">Carregando agenda…</div>
           </div>
         </div>
-        <div class="panel-body" id="atividadeRecente">
-          <div class="estado-carregando">Carregando atividade…</div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Atividade recente</h2>
+              <p>Histórico: reuniões já ocorridas, projetos e documentos atualizados.</p>
+            </div>
+          </div>
+          <div class="panel-body" id="atividadeRecente">
+            <div class="estado-carregando">Carregando atividade…</div>
+          </div>
         </div>
       </div>
 

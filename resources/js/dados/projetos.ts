@@ -148,10 +148,13 @@ export interface ItemDeAtividade {
     etiqueta: string;
     quando: string;
     destino: string;
+    /** Quando existe, o clique abre esse caminho (ex.: reunião específica). */
+    caminho?: string | null;
 }
 
 export interface PainelDoInicio {
     contadores: ContadoresDoInicio;
+    proximasReunioes: ItemDeAtividade[];
     atividade: ItemDeAtividade[];
 }
 

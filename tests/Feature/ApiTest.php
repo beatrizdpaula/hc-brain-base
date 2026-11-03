@@ -6,6 +6,7 @@ use App\Models\Documento;
 use App\Models\Pasta;
 use App\Models\Reuniao;
 use App\Models\User;
+use App\Support\GoogleAgenda;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -155,7 +156,59 @@ class ApiTest extends TestCase
                     'processos' => 6,
                 ],
             ])
+            ->assertJsonStructure(['proximasReunioes', 'atividade'])
             ->assertJsonStructure(['atividade' => [['titulo', 'detalhe', 'etiqueta', 'quando', 'destino']]]);
+    }
+
+    public function test_inicio_separa_proximas_reunioes_do_historico_recente(): void
+    {
+        $hoje = now(GoogleAgenda::FUSO)->startOfDay();
+
+        $futura = Reuniao::query()->create([
+            'titulo' => 'Alinhamento futuro HC',
+            'tipo' => 'Alinhamento',
+            'data' => $hoje->copy()->addYear()->toDateString(),
+            'horario' => '10:00',
+            'responsavel' => 'Beatriz Andrade',
+            'participantes' => [],
+            'decisoes' => [],
+            'proximos_passos' => [],
+            'status' => 'Agendada',
+            'resumo' => 'Não deve aparecer na atividade recente.',
+        ]);
+
+        Reuniao::query()->create([
+            'titulo' => 'Alinhamento passado HC',
+            'tipo' => 'Alinhamento',
+            'data' => $hoje->copy()->subDays(3)->toDateString(),
+            'horario' => '15:00',
+            'responsavel' => 'Beatriz Andrade',
+            'participantes' => [],
+            'decisoes' => [],
+            'proximos_passos' => [],
+            'status' => 'Concluída',
+            'resumo' => 'Pertence ao histórico recente.',
+        ]);
+
+        $resposta = $this->autenticado()
+            ->getJson('/api/inicio')
+            ->assertOk();
+
+        $proximas = collect($resposta->json('proximasReunioes'));
+        $atividade = collect($resposta->json('atividade'));
+
+        $this->assertTrue(
+            $proximas->contains(fn (array $item) => str_contains($item['caminho'] ?? '', 'reuniao='.$futura->id)),
+            'A reunião futura deve aparecer em Próximas reuniões.',
+        );
+        $this->assertFalse(
+            $atividade->contains(fn (array $item) => str_contains($item['titulo'], 'Alinhamento futuro HC')),
+            'A reunião futura não deve aparecer na atividade recente.',
+        );
+        $this->assertTrue(
+            $atividade->contains(fn (array $item) => str_contains((string) ($item['detalhe'] ?? ''), 'Pertence ao histórico recente.')),
+            'A reunião passada deve aparecer na atividade recente.',
+        );
     }
 
     public function test_comercial_responde_por_periodo(): void

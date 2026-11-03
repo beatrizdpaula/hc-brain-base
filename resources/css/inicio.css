@@ -165,6 +165,13 @@
     align-items: start;
 }
 
+.dashboard-coluna {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    min-width: 0;
+}
+
 .dashboard .panel-body {
     padding: var(--esp-2) var(--esp-3) var(--esp-3);
 }

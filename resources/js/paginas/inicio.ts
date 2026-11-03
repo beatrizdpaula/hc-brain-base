@@ -135,7 +135,7 @@ porId("atalhosGrid").innerHTML = ATALHOS.map(
   `,
 ).join("");
 
-const { contadores, atividade } = await carregarInicio();
+const { contadores, proximasReunioes, atividade } = await carregarInicio();
 
 porId("inicioMetrics").innerHTML = METRICAS.map(
     (metrica) => `
@@ -147,9 +147,13 @@ porId("inicioMetrics").innerHTML = METRICAS.map(
   `,
 ).join("");
 
+porId("proximasReunioes").innerHTML = proximasReunioes.length
+    ? proximasReunioes.map(linhaDeAtividade).join("")
+    : `<div class="empty-state">Nenhuma reunião agendada a partir de hoje.</div>`;
+
 porId("atividadeRecente").innerHTML = atividade.length
     ? atividade.map(linhaDeAtividade).join("")
-    : `<div class="empty-state">Nada registrado ainda.</div>`;
+    : `<div class="empty-state">Nada no histórico recente ainda.</div>`;
 
 porId("areasAcessadas").innerHTML = AREAS.map(
     (area) => `
@@ -161,8 +165,9 @@ porId("areasAcessadas").innerHTML = AREAS.map(
 ).join("");
 
 function linhaDeAtividade(item: ItemDeAtividade): string {
+    const destino = item.caminho?.trim() || caminhoDaPagina(item.destino);
     return `
-    <a class="list-item atividade" href="${caminhoDaPagina(item.destino)}">
+    <a class="list-item atividade" href="${escapar(destino)}">
       <span class="atividade-topo">
         <strong>${escapar(item.titulo)}</strong>
         <span class="tag gray">${escapar(item.etiqueta)}</span>
