@@ -106,7 +106,7 @@ const METRICAS: Metrica[] = [
         cor: "yellow",
         rotulo: "Conteúdos de capacitação",
     },
-    { chave: "projetos", icone: "rocket", cor: "purple", rotulo: "Projetos em curso" },
+    { chave: "projetos", icone: "rocket", cor: "purple", rotulo: "Projetos em andamento" },
     {
         chave: "processos",
         icone: "workflow",

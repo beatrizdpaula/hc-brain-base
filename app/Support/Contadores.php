@@ -47,7 +47,8 @@ final class Contadores
             'documentos' => Documento::count(),
             'fontes' => Fonte::count(),
             'treinamentos' => Treinamento::count(),
-            'projetos' => Projeto::count(),
+            // Mesmo critério da tela Projetos: "em andamento" ≠ carteira inteira.
+            'projetos' => Projeto::query()->where('status', 'Em andamento')->count(),
             'processos' => Processo::count(),
         ];
     }

@@ -151,7 +151,7 @@ class ApiTest extends TestCase
                     'usuarios' => 7,
                     'documentos' => 5,
                     'treinamentos' => 19,
-                    'projetos' => 6,
+                    'projetos' => 4,
                     'processos' => 6,
                 ],
             ])
