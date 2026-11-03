@@ -16,4 +16,20 @@ class TextoPdfTest extends TestCase
         $this->assertStringContainsString('/BaseFont /Helvetica', $pdf);
         $this->assertStringContainsString('Lista de Usu', $pdf);
     }
+
+    public function test_remove_markdown_do_conteudo_do_pdf(): void
+    {
+        $limpo = TextoPdf::limparMarkdown(
+            "1. **Acompanhamento diário**\n- **Tipo:** Transferência\n- [Entrar no Meet](https://meet.google.com/abc)",
+        );
+
+        $this->assertStringNotContainsString('**', $limpo);
+        $this->assertStringContainsString('Acompanhamento diário', $limpo);
+        $this->assertStringContainsString('Tipo: Transferência', $limpo);
+        $this->assertStringContainsString('Entrar no Meet (https://meet.google.com/abc)', $limpo);
+
+        $pdf = TextoPdf::de('Reuniões de hoje', $limpo);
+        $this->assertStringStartsWith('%PDF-1.4', $pdf);
+        $this->assertStringNotContainsString('**', $pdf);
+    }
 }

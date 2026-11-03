@@ -28,8 +28,8 @@ final class TextoPdf
 
     public static function de(string $titulo, string $conteudo): string
     {
-        $tituloLatin = self::paraLatin1($titulo);
-        $linhas = self::quebrarLinhas(self::paraLatin1($conteudo));
+        $tituloLatin = self::paraLatin1(self::limparMarkdown($titulo));
+        $linhas = self::quebrarLinhas(self::paraLatin1(self::limparMarkdown($conteudo)));
         $paginas = self::paginar($tituloLatin, $linhas);
 
         $objetos = [
@@ -146,6 +146,23 @@ final class TextoPdf
         }
 
         return $resultado;
+    }
+
+    /**
+     * A Sofia responde em markdown; o PDF é texto puro. Tira negrito/itálico
+     * e transforma links em "rótulo (url)" para não sobrar `**` nem `[]()`.
+     */
+    public static function limparMarkdown(string $texto): string
+    {
+        $texto = preg_replace('/!\[([^\]]*)\]\(([^)\s]+)\)/', '$1', $texto) ?? $texto;
+        $texto = preg_replace('/\[([^\]]+)\]\(([^)\s]+)\)/', '$1 ($2)', $texto) ?? $texto;
+        $texto = preg_replace('/\*\*([^*]+)\*\*/', '$1', $texto) ?? $texto;
+        $texto = preg_replace('/__([^_]+)__/', '$1', $texto) ?? $texto;
+        $texto = preg_replace('/(^|[^*])\*([^*\n]+)\*([^*]|$)/', '$1$2$3', $texto) ?? $texto;
+        $texto = preg_replace('/(^|[^_])_([^_\n]+)_([^_]|$)/', '$1$2$3', $texto) ?? $texto;
+        $texto = preg_replace('/^\s{0,3}#{1,6}\s+/m', '', $texto) ?? $texto;
+
+        return $texto;
     }
 
     private static function paraLatin1(string $texto): string

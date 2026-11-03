@@ -171,7 +171,7 @@ final class SofiaTools
                 'Cria um arquivo PDF novo na base de Documentos. Use para checklist, ata, roteiro ou texto que você já tenha. Para PDF da lista de usuários, prefira gerar_pdf_usuarios.',
                 [
                     'nome' => ['type' => 'string', 'description' => 'Nome do documento (sem extensão). O arquivo será nome.pdf.'],
-                    'conteudo' => ['type' => 'string', 'description' => 'Texto completo que vai dentro do PDF.'],
+                    'conteudo' => ['type' => 'string', 'description' => 'Texto puro do PDF, sem markdown (sem **negrito** nem [texto](url)). Links como "rótulo: https://…".'],
                     'pasta' => ['type' => 'string', 'description' => 'Pasta de destino. Se omitida ou inexistente, usa/cria "Sofia".'],
                 ],
                 ['nome', 'conteudo'],
