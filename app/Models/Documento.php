@@ -115,15 +115,24 @@ class Documento extends Model
 
     /**
      * Se o blob sumiu mas o documento é uma lista de usuários da Sofia,
-     * remonta o PDF a partir da base ao vivo e grava de novo.
+     * remonta PDF ou TXT a partir da base ao vivo e grava de novo.
      */
     public function tentarRecuperarBytes(): ?string
     {
-        if ($this->extensao !== 'pdf' || ! $this->pareceListaDeUsuarios()) {
+        if (! $this->pareceListaDeUsuarios()) {
             return null;
         }
 
-        $bytes = self::montarPdfListaUsuarios($this->nome);
+        $bytes = match ($this->extensao) {
+            'pdf' => self::montarPdfListaUsuarios($this->nome),
+            'txt' => self::montarTextoListaUsuarios($this->nome),
+            default => null,
+        };
+
+        if ($bytes === null || $bytes === '') {
+            return null;
+        }
+
         $this->guardarBytes($bytes);
 
         return $bytes;
@@ -215,6 +224,20 @@ class Documento extends Model
 
     public static function montarPdfListaUsuarios(string $titulo): string
     {
+        $titulo = $titulo !== '' ? $titulo : 'Lista de Usuários';
+
+        return TextoPdf::de($titulo, self::corpoListaUsuarios());
+    }
+
+    public static function montarTextoListaUsuarios(string $titulo): string
+    {
+        $cabecalho = ($titulo !== '' ? $titulo : 'Lista de Usuários')."\n\n";
+
+        return $cabecalho.self::corpoListaUsuarios()."\n";
+    }
+
+    private static function corpoListaUsuarios(): string
+    {
         $usuarios = User::query()
             ->orderBy('name')
             ->get(['name', 'email', 'perfil', 'area', 'status']);
@@ -225,9 +248,7 @@ class Documento extends Model
             return "{$n}. {$usuario->name} · {$usuario->email} · {$usuario->perfil} · {$usuario->area} · {$usuario->status}";
         })->all();
 
-        $corpo = 'Total: '.$usuarios->count()."\n\n".implode("\n", $linhas);
-
-        return TextoPdf::de($titulo !== '' ? $titulo : 'Lista de Usuários', $corpo);
+        return 'Total: '.$usuarios->count()."\n\n".implode("\n", $linhas);
     }
 
     /** Apaga o arquivo do disco junto com o registro — nada fica órfão lá. */

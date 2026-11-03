@@ -376,6 +376,36 @@ class EscritaTest extends TestCase
         $this->assertNotNull($documento->fresh()->lerBytes());
     }
 
+    public function test_download_regenera_txt_de_lista_de_usuarios_quando_o_blob_sumiu(): void
+    {
+        Storage::fake(config('hc.documentos.disco'));
+
+        $pasta = Pasta::firstOrFail();
+        $caminho = 'documentos/'.$pasta->id.'/lista-perdida.txt';
+
+        $documento = Documento::create([
+            'pasta_id' => $pasta->id,
+            'nome' => 'Lista de Usuários Cadastrados',
+            'extensao' => 'txt',
+            'arquivo' => $caminho,
+            'conteudo' => null,
+            'tamanho' => 168,
+            'mime' => 'text/plain',
+            'enviado_por' => User::firstOrFail()->id,
+        ]);
+
+        Storage::disk(config('hc.documentos.disco'))->assertMissing($caminho);
+
+        $resposta = $this->autenticado()
+            ->get("/api/documentos/{$documento->id}/arquivo")
+            ->assertOk();
+
+        $corpo = $resposta->streamedContent();
+        $this->assertStringContainsString('Lista de Usuários Cadastrados', $corpo);
+        $this->assertStringContainsString('Total:', $corpo);
+        $this->assertNotNull($documento->fresh()->lerBytes());
+    }
+
     public function test_excluir_documento_apaga_o_arquivo_do_disco(): void
     {
         $documento = Documento::whereNotNull('arquivo')->firstOrFail();
