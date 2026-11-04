@@ -114,7 +114,7 @@ class ApiTest extends TestCase
             ->getJson('/api/treinamentos')
             ->assertOk()
             ->assertJsonCount(19, 'conteudos')
-            ->assertJsonCount(5, 'historico');
+            ->assertJsonCount(0, 'historico');
     }
 
     public function test_projetos_trazem_prazo_e_progresso(): void

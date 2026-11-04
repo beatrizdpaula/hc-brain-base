@@ -34,14 +34,6 @@ class TreinamentoSeeder extends Seeder
         ['fluxo-contabil', 'Fluxograma', 'Teste 01 FLUXOGRAMA', 'Contábil', 'Todos', 'Fluxo demonstrativo de uma rotina contábil.', null, null, 'Rotina contábil'],
     ];
 
-    private const HISTORICO = [
-        ['Flávia Silva', 'Empresa X', 'Abertura, Regularização e Encerramento', 'Concluído', 100, '05/09/2026'],
-        ['João Pereira', 'Empresa Y', 'Trilha do Atendimento', 'Em andamento', 65, '08/09/2026'],
-        ['Mariana Costa', 'Empresa Z', 'Demonstrativo Simples Nacional', 'Concluído', 100, '02/09/2026'],
-        ['Luciana Almeida', 'Empresa K', 'Trilha do Comercial', 'Em andamento', 40, '09/09/2026'],
-        ['Carlos Mendes', 'Empresa W', 'O que é contabilidade', 'Concluído', 100, '01/09/2026'],
-    ];
-
     private const POR_EMPRESA = [
         'empresaX' => ['curso-abertura', 'manual-processo', 'trilha-comercial'],
         'empresaY' => ['trilha-atendimento', 'curso-processos', 'manual-drive'],
@@ -71,10 +63,8 @@ class TreinamentoSeeder extends Seeder
             ]);
         }
 
+        // Histórico fica vazio até existir sync real de progresso (ex.: Academy).
         TreinamentoHistorico::query()->delete();
-        foreach (self::HISTORICO as $ordem => [$pessoa, $empresa, $conteudo, $status, $progresso, $data]) {
-            TreinamentoHistorico::create(compact('pessoa', 'empresa', 'conteudo', 'status', 'progresso', 'data', 'ordem'));
-        }
 
         foreach (self::POR_EMPRESA as $empresaId => $treinamentos) {
             $vinculos = [];

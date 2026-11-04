@@ -232,6 +232,16 @@ function renderHistorico(): void {
         "registros",
     );
 
+    if (historico.length === 0) {
+        porId("trainingHistory").innerHTML = `
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">Nenhum histórico de aprendizagem ainda.</div>
+          </td>
+        </tr>`;
+        return;
+    }
+
     porId("trainingHistory").innerHTML = historico
         .map(
             (item) => `
