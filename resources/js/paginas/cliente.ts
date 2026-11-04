@@ -8,14 +8,17 @@
    estado de erro e não há nada para carregar aqui.
    ========================================================= */
 
+import { ErroDeApi } from "../comum/api.ts";
 import {
     carregarEmpresa,
+    salvarCodigoOmie,
+    sincronizarOmieEmpresa,
     type EmpresaDetalhada,
     type FinanceiroEmpresa,
 } from "../dados/empresas.ts";
 import { tagDoStatus, tagDoTipoDeReuniao, type Reuniao } from "../dados/reunioes.ts";
 import { aparenciaPorTipo, type ConteudoTreinamento } from "../dados/treinamentos.ts";
-import { dado, porId, porSeletor, talvez, todos } from "../comum/dom.ts";
+import { campo, dado, porId, porSeletor, talvez, todos } from "../comum/dom.ts";
 import { atualizarSecao } from "../comum/estado.ts";
 import { duracaoEmMeses, escapar, iniciais, moeda } from "../comum/formato.ts";
 import { desenharIcones, icone } from "../comum/icones.ts";
@@ -28,18 +31,73 @@ iniciarPagina("cliente");
 const detalhe = talvez("#empresaDetailView");
 
 if (detalhe) {
-    const { empresa, reunioes, treinamentos, financeiro } = await carregarEmpresa(
+    let { empresa, reunioes, treinamentos, financeiro } = await carregarEmpresa(
         dado(detalhe, "empresaId"),
     );
 
     detalhe.classList.add("active");
-    renderCabecalho(empresa, reunioes);
-    renderSocio(empresa);
-    renderFontes(empresa);
-    renderReunioes(reunioes);
-    renderTreinamentos(empresa, treinamentos);
-    renderFinanceiro(empresa, reunioes.length, financeiro);
-    desenharIcones();
+
+    function desenharTudo(): void {
+        renderCabecalho(empresa, reunioes);
+        renderSocio(empresa);
+        renderFontes(empresa);
+        renderReunioes(reunioes);
+        renderTreinamentos(empresa, treinamentos);
+        renderOmie(empresa);
+        renderFinanceiro(empresa, reunioes.length, financeiro);
+        desenharIcones();
+    }
+
+    desenharTudo();
+
+    porId("empresaOmieSalvar").addEventListener("click", async () => {
+        const status = porId("empresaOmieStatus");
+        const bruto = campo("empresaOmieCodigo").value.trim();
+        const codigo = bruto === "" ? null : Number(bruto);
+
+        if (codigo !== null && (!Number.isInteger(codigo) || codigo < 1)) {
+            status.textContent = "Informe um código Omie válido (número inteiro).";
+            return;
+        }
+
+        try {
+            const salva = await salvarCodigoOmie(empresa.id, codigo);
+            empresa = { ...empresa, omieCodigoCliente: salva.omieCodigoCliente };
+            status.textContent = codigo
+                ? `Vínculo salvo: cliente Omie ${codigo}.`
+                : "Vínculo Omie removido.";
+            renderOmie(empresa);
+        } catch (erro) {
+            status.textContent =
+                erro instanceof ErroDeApi
+                    ? erro.primeiroErro("omieCodigoCliente") ?? erro.message
+                    : "Não foi possível salvar o vínculo Omie.";
+        }
+    });
+
+    porId("empresaOmieSincronizar").addEventListener("click", async () => {
+        const status = porId("empresaOmieStatus");
+        const botao = porId("empresaOmieSincronizar") as HTMLButtonElement;
+        botao.disabled = true;
+        status.textContent = "Sincronizando com o Omie…";
+
+        try {
+            const detalheAtualizado = await sincronizarOmieEmpresa(empresa.id);
+            empresa = detalheAtualizado.empresa;
+            reunioes = detalheAtualizado.reunioes;
+            treinamentos = detalheAtualizado.treinamentos;
+            financeiro = detalheAtualizado.financeiro;
+            desenharTudo();
+            status.textContent = "Financeiro atualizado a partir do Omie.";
+        } catch (erro) {
+            status.textContent =
+                erro instanceof ErroDeApi
+                    ? erro.message
+                    : "Falha ao sincronizar com o Omie.";
+        } finally {
+            botao.disabled = false;
+        }
+    });
 
     // Abre o histórico dessa empresa sem herdar busca, status, período etc.
     porId("verTodasReunioesEmpresa").addEventListener("click", () => {
@@ -57,6 +115,14 @@ if (detalhe) {
         window.location.href =
             `${caminhoDaPagina("reunioes")}?empresa=${encodeURIComponent(empresa.nome)}`;
     });
+}
+
+function renderOmie(empresa: EmpresaDetalhada): void {
+    const input = campo("empresaOmieCodigo");
+    input.value =
+        empresa.omieCodigoCliente === null || empresa.omieCodigoCliente === undefined
+            ? ""
+            : String(empresa.omieCodigoCliente);
 }
 
 function renderCabecalho(empresa: EmpresaDetalhada, reunioes: Reuniao[]): void {
@@ -198,11 +264,14 @@ function renderFinanceiro(
     dados: FinanceiroEmpresa | null,
 ): void {
     if (!dados) {
-        porSeletor(".empresa-relacionamento-body").innerHTML =
-            `<div class="empty-state">Sem dados financeiros para esta empresa.</div>`;
+        porId("empresaLtvGrid").innerHTML =
+            `<div class="empty-state">Sem dados financeiros ainda. Vincule o código Omie e sincronize.</div>`;
+        porId("empresaRelacionamentoBase").innerHTML = "";
         porSeletor(".empresa-financeiro").hidden = true;
         return;
     }
+
+    porSeletor(".empresa-financeiro").hidden = false;
 
     const receitaTotal = dados.receitaMensal.reduce((soma, item) => soma + item.valor, 0);
     const crescimento =

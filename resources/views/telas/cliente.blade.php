@@ -61,9 +61,24 @@
               <h2>Relacionamento financeiro</h2>
               <p>
                 Indicadores do relacionamento da empresa com a HC, junto aos principais
-                dados do cadastro.
+                dados do cadastro. O vínculo com o Omie é por código de cliente.
               </p>
             </div>
+          </div>
+          <div class="empresa-omie-vinculo" id="empresaOmieVinculo">
+            <label for="empresaOmieCodigo">Código do cliente no Omie</label>
+            <div class="empresa-omie-acoes">
+              <input
+                id="empresaOmieCodigo"
+                type="number"
+                min="1"
+                inputmode="numeric"
+                placeholder="Ex.: 1234567"
+              />
+              <button type="button" class="secondary" id="empresaOmieSalvar">Salvar vínculo</button>
+              <button type="button" class="primary" id="empresaOmieSincronizar">Sincronizar Omie</button>
+            </div>
+            <p class="muted" id="empresaOmieStatus"></p>
           </div>
           <div class="empresa-relacionamento-body">
             <div class="empresa-ltv-grid" id="empresaLtvGrid"></div>

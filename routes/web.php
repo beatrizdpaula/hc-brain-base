@@ -72,6 +72,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/empresas', [Api\EmpresaController::class, 'store']);
         Route::get('/empresas/{empresa}', [Api\EmpresaController::class, 'show']);
         Route::put('/empresas/{empresa}', [Api\EmpresaController::class, 'update']);
+        Route::patch('/empresas/{empresa}/omie', [Api\EmpresaController::class, 'atualizarOmie']);
+        Route::post('/empresas/{empresa}/omie/sincronizar', [Api\EmpresaController::class, 'sincronizarOmie']);
         Route::delete('/empresas/{empresa}', [Api\EmpresaController::class, 'destroy']);
 
         Route::get('/reunioes', [Api\ReuniaoController::class, 'index']);

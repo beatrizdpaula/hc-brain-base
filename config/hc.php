@@ -41,6 +41,16 @@ return [
         'url' => rtrim((string) env('HC_ACADEMY_URL', 'https://stingray-app-fb2jl.ondigitalocean.app'), '/'),
     ],
 
+    /*
+    | Omie (ERP). O Financeiro do Brain sincroniza contas a receber/pagar
+    | das empresas que tiverem `omie_codigo_cliente` preenchido.
+    */
+    'omie' => [
+        'app_key' => env('OMIE_APP_KEY'),
+        'app_secret' => env('OMIE_APP_SECRET'),
+        'base_url' => rtrim((string) env('OMIE_BASE_URL', 'https://app.omie.com.br/api/v1'), '/'),
+    ],
+
     'documentos' => [
 
         /*

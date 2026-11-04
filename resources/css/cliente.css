@@ -110,6 +110,35 @@
     font-size: var(--texto-sm);
 }
 
+.empresa-omie-vinculo {
+    display: grid;
+    gap: var(--esp-2);
+    padding: var(--esp-4) var(--esp-5);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alto);
+}
+
+.empresa-omie-vinculo label {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+}
+
+.empresa-omie-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+    align-items: center;
+}
+
+.empresa-omie-acoes input {
+    width: min(100%, 220px);
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+    background: var(--surface);
+    color: var(--texto);
+}
+
 .empresa-relacionamento-body {
     padding: var(--esp-4) var(--esp-5) var(--esp-5);
 }

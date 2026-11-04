@@ -9,7 +9,14 @@
    leem empresa, sócio e fonte exatamente como antes.
    ========================================================= */
 
-import { atualizar, enviar, obter, obterColecao, remover } from "../comum/api.ts";
+import {
+    atualizar,
+    atualizarParcial,
+    enviar,
+    obter,
+    obterColecao,
+    remover,
+} from "../comum/api.ts";
 import type { Reuniao } from "./reunioes.ts";
 import type { ConteudoTreinamento } from "./treinamentos.ts";
 
@@ -43,6 +50,8 @@ export interface Empresa {
     setor: string;
     status: string;
     statusTag: CorTag;
+    /** Código do cliente no Omie; null se ainda não vinculado. */
+    omieCodigoCliente: number | null;
     socio: SocioEmpresa;
     totalFontes: number;
     totalReunioes: number;
@@ -175,4 +184,22 @@ export function excluirEmpresa(id: string): Promise<void> {
 
 export function carregarCarteira(): Promise<LinhaCarteira[]> {
     return obter<LinhaCarteira[]>("/financeiro");
+}
+
+export async function salvarCodigoOmie(
+    id: string,
+    omieCodigoCliente: number | null,
+): Promise<Empresa> {
+    const resposta = await atualizarParcial<{ data: Empresa }>(
+        `/empresas/${encodeURIComponent(id)}/omie`,
+        { omieCodigoCliente },
+    );
+    return resposta.data;
+}
+
+export function sincronizarOmieEmpresa(id: string): Promise<DetalheEmpresa> {
+    return enviar<DetalheEmpresa>(
+        `/empresas/${encodeURIComponent(id)}/omie/sincronizar`,
+        {},
+    );
 }

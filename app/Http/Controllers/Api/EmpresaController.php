@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AtualizarOmieEmpresaRequest;
 use App\Http\Resources\EmpresaResource;
 use App\Http\Resources\ReuniaoResource;
 use App\Http\Resources\TreinamentoResource;
 use App\Models\Empresa;
 use App\Models\ReceitaMensal;
 use App\Models\Transacao;
+use App\Support\Omie;
+use App\Support\OmieFinanceiroSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Throwable;
 
 class EmpresaController extends Controller
 {
@@ -83,5 +87,46 @@ class EmpresaController extends Controller
     public function destroy(Empresa $empresa): Response
     {
         abort(403, 'Empresas são só para consulta. O cadastro vem da automação.');
+    }
+
+    /**
+     * Único campo editável da carteira no Brain: o código do cliente no Omie,
+     * necessário para puxar o financeiro sem CNPJ local.
+     */
+    public function atualizarOmie(AtualizarOmieEmpresaRequest $request, Empresa $empresa): EmpresaResource
+    {
+        $empresa->update([
+            'omie_codigo_cliente' => $request->validated('omieCodigoCliente'),
+        ]);
+
+        return new EmpresaResource($empresa->load(['socio', 'ultimaReuniao']));
+    }
+
+    /** Sincroniza agora o financeiro dessa empresa a partir do Omie. */
+    public function sincronizarOmie(Empresa $empresa): JsonResponse
+    {
+        if ($empresa->omie_codigo_cliente === null) {
+            return response()->json([
+                'message' => 'Informe o código do cliente Omie antes de sincronizar.',
+            ], 422);
+        }
+
+        if (! Omie::configurada()) {
+            return response()->json([
+                'message' => 'Omie não configurada neste ambiente (OMIE_APP_KEY / OMIE_APP_SECRET).',
+            ], 503);
+        }
+
+        try {
+            OmieFinanceiroSync::sincronizar($empresa->fresh());
+        } catch (Throwable $erro) {
+            report($erro);
+
+            return response()->json([
+                'message' => 'Falha ao sincronizar com o Omie: '.$erro->getMessage(),
+            ], 502);
+        }
+
+        return $this->show($empresa->fresh());
     }
 }

@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * Entidade principal do banco: cada empresa tem um sócio responsável, fontes
  * vinculadas diretamente a ela e as reuniões do relacionamento.
  */
-#[Fillable(['id', 'automacao_id', 'nome', 'setor', 'status', 'status_tag'])]
+#[Fillable(['id', 'automacao_id', 'omie_codigo_cliente', 'nome', 'setor', 'status', 'status_tag'])]
 class Empresa extends Model
 {
     protected $table = 'empresas';

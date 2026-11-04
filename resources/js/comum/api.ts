@@ -88,6 +88,10 @@ export function atualizar<T>(caminho: string, corpo: unknown): Promise<T> {
     return comCorpo<T>("PUT", caminho, corpo);
 }
 
+export function atualizarParcial<T>(caminho: string, corpo: unknown): Promise<T> {
+    return comCorpo<T>("PATCH", caminho, corpo);
+}
+
 export async function remover(caminho: string): Promise<void> {
     await pedir<null>(caminho, {
         method: "DELETE",
