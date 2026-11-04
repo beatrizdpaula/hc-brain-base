@@ -50,7 +50,9 @@ export interface Empresa {
     setor: string;
     status: string;
     statusTag: CorTag;
-    /** Código do cliente no Omie; null se ainda não vinculado. */
+    /** App Omie + código do cliente; null se ainda não vinculado. */
+    omieAppId: number | null;
+    omieAppNome?: string | null;
     omieCodigoCliente: number | null;
     socio: SocioEmpresa;
     totalFontes: number;
@@ -186,15 +188,61 @@ export function carregarCarteira(): Promise<LinhaCarteira[]> {
     return obter<LinhaCarteira[]>("/financeiro");
 }
 
-export async function salvarCodigoOmie(
+export async function salvarVinculoOmie(
     id: string,
+    omieAppId: number | null,
     omieCodigoCliente: number | null,
 ): Promise<Empresa> {
     const resposta = await atualizarParcial<{ data: Empresa }>(
         `/empresas/${encodeURIComponent(id)}/omie`,
-        { omieCodigoCliente },
+        { omieAppId, omieCodigoCliente },
     );
     return resposta.data;
+}
+
+export interface OmieAppResumo {
+    id: number;
+    nome: string;
+    appKey: string;
+    ativo: boolean;
+    temSecret: boolean;
+}
+
+export function carregarOmieApps(): Promise<{
+    podeGerenciar: boolean;
+    apps: OmieAppResumo[];
+}> {
+    return obter("/omie-apps");
+}
+
+export async function salvarOmieApp(dados: {
+    nome: string;
+    appKey: string;
+    appSecret?: string;
+    ativo?: boolean;
+    id?: number;
+}): Promise<OmieAppResumo> {
+    if (dados.id) {
+        const resposta = await atualizar<{ data: OmieAppResumo }>(`/omie-apps/${dados.id}`, {
+            nome: dados.nome,
+            appKey: dados.appKey,
+            appSecret: dados.appSecret || undefined,
+            ativo: dados.ativo ?? true,
+        });
+        return resposta.data;
+    }
+
+    const resposta = await enviar<{ data: OmieAppResumo }>("/omie-apps", {
+        nome: dados.nome,
+        appKey: dados.appKey,
+        appSecret: dados.appSecret,
+        ativo: dados.ativo ?? true,
+    });
+    return resposta.data;
+}
+
+export function excluirOmieApp(id: number): Promise<void> {
+    return remover(`/omie-apps/${id}`);
 }
 
 export function sincronizarOmieEmpresa(id: string): Promise<DetalheEmpresa> {

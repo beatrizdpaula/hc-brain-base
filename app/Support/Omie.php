@@ -2,29 +2,25 @@
 
 namespace App\Support;
 
+use App\Models\OmieApp;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Cliente HTTP da API Omie (JSON). Credenciais vêm de hc.omie.
+ * Cliente HTTP da API Omie (JSON). Credenciais vêm do `OmieApp` na base.
  */
 final class Omie
 {
-    public static function configurada(): bool
-    {
-        return filled(config('hc.omie.app_key')) && filled(config('hc.omie.app_secret'));
-    }
-
     /**
      * @param  array<string, mixed>  $param
      * @return array<string, mixed>
      */
-    public static function chamar(string $recurso, string $call, array $param = []): array
+    public static function chamar(OmieApp $app, string $recurso, string $call, array $param = []): array
     {
-        if (! self::configurada()) {
+        if (! $app->estaPronta()) {
             throw new RuntimeException(
-                'OMIE_APP_KEY / OMIE_APP_SECRET vazias. Configure no .env ou no Render.'
+                "App Omie \"{$app->nome}\" inativo ou sem app_key/app_secret."
             );
         }
 
@@ -38,8 +34,8 @@ final class Omie
                 ->asJson()
                 ->post($url, [
                     'call' => $call,
-                    'app_key' => config('hc.omie.app_key'),
-                    'app_secret' => config('hc.omie.app_secret'),
+                    'app_key' => $app->app_key,
+                    'app_secret' => $app->app_secret,
                     'param' => [$param],
                 ])
                 ->throw()
@@ -65,12 +61,11 @@ final class Omie
     }
 
     /**
-     * Lista todas as páginas de um método Omie com lista em `$chaveLista`.
-     *
      * @param  array<string, mixed>  $filtro
      * @return list<array<string, mixed>>
      */
     public static function listarTodas(
+        OmieApp $app,
         string $recurso,
         string $call,
         string $chaveLista,
@@ -82,7 +77,7 @@ final class Omie
         $itens = [];
 
         do {
-            $resposta = self::chamar($recurso, $call, [
+            $resposta = self::chamar($app, $recurso, $call, [
                 ...$filtro,
                 'pagina' => $pagina,
                 'registros_por_pagina' => $porPagina,

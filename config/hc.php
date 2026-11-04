@@ -42,12 +42,10 @@ return [
     ],
 
     /*
-    | Omie (ERP). O Financeiro do Brain sincroniza contas a receber/pagar
-    | das empresas que tiverem `omie_codigo_cliente` preenchido.
+    | Omie (ERP). Credenciais ficam na tabela omie_apps (a HC tem vários apps).
+    | Cada empresa aponta para um app + código de cliente.
     */
     'omie' => [
-        'app_key' => env('OMIE_APP_KEY'),
-        'app_secret' => env('OMIE_APP_SECRET'),
         'base_url' => rtrim((string) env('OMIE_BASE_URL', 'https://app.omie.com.br/api/v1'), '/'),
     ],
 

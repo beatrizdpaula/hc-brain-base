@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Empresa;
+use App\Models\OmieApp;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -25,32 +26,45 @@ class SincronizarOmieTest extends TestCase
         return $this->actingAs(User::firstOrFail());
     }
 
-    public function test_salva_codigo_omie_na_empresa(): void
+    private function appOmie(): OmieApp
+    {
+        return OmieApp::query()->create([
+            'nome' => 'HC Contábil',
+            'app_key' => 'chave-teste',
+            'app_secret' => 'segredo-teste',
+            'ativo' => true,
+        ]);
+    }
+
+    public function test_salva_vinculo_omie_na_empresa(): void
     {
         $empresa = Empresa::query()->firstOrFail();
+        $app = $this->appOmie();
 
         $this->autenticado()
             ->patchJson('/api/empresas/'.$empresa->id.'/omie', [
+                'omieAppId' => $app->id,
                 'omieCodigoCliente' => 424242,
             ])
             ->assertOk()
+            ->assertJsonPath('data.omieAppId', $app->id)
             ->assertJsonPath('data.omieCodigoCliente', 424242);
 
         $this->assertDatabaseHas('empresas', [
             'id' => $empresa->id,
+            'omie_app_id' => $app->id,
             'omie_codigo_cliente' => 424242,
         ]);
     }
 
     public function test_sincroniza_financeiro_a_partir_do_omie(): void
     {
-        config([
-            'hc.omie.app_key' => 'chave-teste',
-            'hc.omie.app_secret' => 'segredo-teste',
-        ]);
-
         $empresa = Empresa::query()->firstOrFail();
-        $empresa->update(['omie_codigo_cliente' => 999001]);
+        $app = $this->appOmie();
+        $empresa->update([
+            'omie_app_id' => $app->id,
+            'omie_codigo_cliente' => 999001,
+        ]);
 
         Http::fake([
             'app.omie.com.br/api/v1/financas/contareceber/*' => Http::response([
@@ -102,10 +116,10 @@ class SincronizarOmieTest extends TestCase
         $this->assertGreaterThan(0, $empresa->transacoes->count());
     }
 
-    public function test_sincronizar_pela_api_exige_codigo(): void
+    public function test_sincronizar_pela_api_exige_app_e_codigo(): void
     {
         $empresa = Empresa::query()->firstOrFail();
-        $empresa->update(['omie_codigo_cliente' => null]);
+        $empresa->update(['omie_codigo_cliente' => null, 'omie_app_id' => null]);
 
         $this->autenticado()
             ->postJson('/api/empresas/'.$empresa->id.'/omie/sincronizar')

@@ -19,6 +19,40 @@
       </div>
     </div>
 
+    <div class="finance-panel" id="omieAppsPanel">
+      <div class="finance-panel-head">
+        <div>
+          <h2>Apps Omie</h2>
+          <p>Credenciais dos apps Omie da HC. Cada empresa escolhe um app + código de cliente.</p>
+        </div>
+      </div>
+      <div class="finance-panel-body">
+        <div class="omie-apps-lista" id="omieAppsLista"></div>
+        <form class="omie-apps-form" id="omieAppsForm" hidden>
+          <div class="omie-apps-campos">
+            <div>
+              <label for="omieAppNome">Nome</label>
+              <input id="omieAppNome" required maxlength="120" placeholder="Ex.: HC Contábil" />
+            </div>
+            <div>
+              <label for="omieAppKey">App key</label>
+              <input id="omieAppKey" required maxlength="120" autocomplete="off" />
+            </div>
+            <div>
+              <label for="omieAppSecret">App secret</label>
+              <input id="omieAppSecret" type="password" maxlength="255" autocomplete="new-password" placeholder="••••••••" />
+            </div>
+          </div>
+          <div class="omie-apps-acoes">
+            <button type="submit" class="primary" id="omieAppSalvar">Salvar app</button>
+            <button type="button" class="secondary" id="omieAppCancelar">Cancelar</button>
+            <p class="muted" id="omieAppsStatus"></p>
+          </div>
+        </form>
+        <button type="button" class="secondary" id="omieAppNovo">Novo app Omie</button>
+      </div>
+    </div>
+
     <div class="finance-toolbar">
       <div class="finance-field">
         <label for="financeEmpresaSearch">Empresa</label>

@@ -10,7 +10,6 @@ use App\Http\Resources\TreinamentoResource;
 use App\Models\Empresa;
 use App\Models\ReceitaMensal;
 use App\Models\Transacao;
-use App\Support\Omie;
 use App\Support\OmieFinanceiroSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,7 +34,7 @@ class EmpresaController extends Controller
     {
         $empresa->load([
             'socio', 'fontes', 'ultimaReuniao', 'reunioes.empresa.socio', 'treinamentos',
-            'financeiro', 'receitasMensais', 'transacoes',
+            'financeiro', 'receitasMensais', 'transacoes', 'omieApp',
         ]);
 
         $financeiro = $empresa->financeiro;
@@ -96,29 +95,32 @@ class EmpresaController extends Controller
     public function atualizarOmie(AtualizarOmieEmpresaRequest $request, Empresa $empresa): EmpresaResource
     {
         $empresa->update([
+            'omie_app_id' => $request->validated('omieAppId'),
             'omie_codigo_cliente' => $request->validated('omieCodigoCliente'),
         ]);
 
-        return new EmpresaResource($empresa->load(['socio', 'ultimaReuniao']));
+        return new EmpresaResource($empresa->load(['socio', 'ultimaReuniao', 'omieApp']));
     }
 
     /** Sincroniza agora o financeiro dessa empresa a partir do Omie. */
     public function sincronizarOmie(Empresa $empresa): JsonResponse
     {
-        if ($empresa->omie_codigo_cliente === null) {
+        $empresa->loadMissing('omieApp');
+
+        if ($empresa->omie_codigo_cliente === null || $empresa->omieApp === null) {
             return response()->json([
-                'message' => 'Informe o código do cliente Omie antes de sincronizar.',
+                'message' => 'Escolha o app Omie e o código do cliente antes de sincronizar.',
             ], 422);
         }
 
-        if (! Omie::configurada()) {
+        if (! $empresa->omieApp->estaPronta()) {
             return response()->json([
-                'message' => 'Omie não configurada neste ambiente (OMIE_APP_KEY / OMIE_APP_SECRET).',
+                'message' => 'O app Omie vinculado está inativo ou sem credenciais.',
             ], 503);
         }
 
         try {
-            OmieFinanceiroSync::sincronizar($empresa->fresh());
+            OmieFinanceiroSync::sincronizar($empresa->fresh(['omieApp']));
         } catch (Throwable $erro) {
             report($erro);
 

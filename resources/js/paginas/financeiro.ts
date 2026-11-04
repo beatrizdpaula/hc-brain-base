@@ -5,14 +5,19 @@
    duas telas. Busca e regime ficam salvos no estado.
    ========================================================= */
 
+import { ErroDeApi } from "../comum/api.ts";
 import {
     carregarCarteira,
+    carregarOmieApps,
+    excluirOmieApp,
+    salvarOmieApp,
     COR_PADRAO_DO_GRAFICO,
     corDoRegime,
     type LinhaCarteira,
+    type OmieAppResumo,
 } from "../dados/empresas.ts";
 import { combina, termoDeBusca } from "../comum/busca.ts";
-import { campo, porId, selecao } from "../comum/dom.ts";
+import { campo, porId, selecao, todos } from "../comum/dom.ts";
 import { atualizarSecao, observarEstado, obterSecao } from "../comum/estado.ts";
 import { escapar, duracaoEmMeses, moeda, plural } from "../comum/formato.ts";
 import { iniciarPagina } from "../comum/shell.ts";
@@ -277,3 +282,139 @@ porId("clearFinanceFilters").addEventListener("click", () => {
 
 observarEstado(["financeiro"], renderFinanceiro);
 renderFinanceiro();
+
+/* ---------- Apps Omie (credenciais na base) ---------- */
+
+let omieApps: OmieAppResumo[] = [];
+let podeGerenciarOmie = false;
+let editandoOmieId: number | null = null;
+
+async function carregarPainelOmie(): Promise<void> {
+    const painel = await carregarOmieApps();
+    omieApps = painel.apps;
+    podeGerenciarOmie = painel.podeGerenciar;
+    renderOmieApps();
+}
+
+function renderOmieApps(): void {
+    const lista = porId("omieAppsLista");
+    const form = porId("omieAppsForm") as HTMLFormElement;
+    const botaoNovo = porId("omieAppNovo") as HTMLButtonElement;
+
+    botaoNovo.hidden = !podeGerenciarOmie;
+    if (!podeGerenciarOmie) {
+        form.hidden = true;
+        lista.innerHTML =
+            `<div class="empty-state">Só administradores cadastram apps Omie. Há ${omieApps.length} app(s) na base.</div>`;
+        return;
+    }
+
+    if (form.dataset.aberto !== "1") {
+        form.hidden = true;
+    }
+
+    lista.innerHTML = omieApps.length
+        ? omieApps
+              .map(
+                  (app) => `
+        <div class="omie-app-item">
+          <div>
+            <strong>${escapar(app.nome)}</strong>
+            <small>${escapar(app.appKey)} · ${app.ativo ? "Ativo" : "Inativo"}</small>
+          </div>
+          <div class="omie-app-item-acoes">
+            <button type="button" class="secondary" data-omie-editar="${app.id}">Editar</button>
+            <button type="button" class="secondary" data-omie-excluir="${app.id}">Excluir</button>
+          </div>
+        </div>`,
+              )
+              .join("")
+        : `<div class="empty-state">Nenhum app Omie cadastrado ainda.</div>`;
+
+    todos("[data-omie-editar]", lista).forEach((botao) => {
+        botao.addEventListener("click", () => {
+            const app = omieApps.find((item) => item.id === Number(botao.getAttribute("data-omie-editar")));
+            if (!app) return;
+            editandoOmieId = app.id;
+            form.dataset.aberto = "1";
+            campo("omieAppNome").value = app.nome;
+            campo("omieAppKey").value = app.appKey;
+            campo("omieAppSecret").value = "";
+            campo("omieAppSecret").placeholder = "Deixe em branco para manter o secret atual";
+            form.hidden = false;
+            porId("omieAppsStatus").textContent = `Editando ${app.nome}.`;
+        });
+    });
+
+    todos("[data-omie-excluir]", lista).forEach((botao) => {
+        botao.addEventListener("click", async () => {
+            const id = Number(botao.getAttribute("data-omie-excluir"));
+            if (!window.confirm("Excluir este app Omie? Empresas vinculadas perdem o vínculo.")) {
+                return;
+            }
+            try {
+                await excluirOmieApp(id);
+                await carregarPainelOmie();
+                porId("omieAppsStatus").textContent = "App removido.";
+            } catch (erro) {
+                porId("omieAppsStatus").textContent =
+                    erro instanceof ErroDeApi ? erro.message : "Não foi possível excluir.";
+            }
+        });
+    });
+}
+
+porId("omieAppNovo").addEventListener("click", () => {
+    editandoOmieId = null;
+    const form = porId("omieAppsForm") as HTMLFormElement;
+    form.dataset.aberto = "1";
+    form.hidden = false;
+    campo("omieAppNome").value = "";
+    campo("omieAppKey").value = "";
+    campo("omieAppSecret").value = "";
+    campo("omieAppSecret").placeholder = "App secret";
+    campo("omieAppSecret").required = true;
+    porId("omieAppsStatus").textContent = "";
+});
+
+porId("omieAppCancelar").addEventListener("click", () => {
+    editandoOmieId = null;
+    const form = porId("omieAppsForm") as HTMLFormElement;
+    form.dataset.aberto = "0";
+    form.hidden = true;
+    campo("omieAppSecret").required = false;
+    porId("omieAppsStatus").textContent = "";
+});
+
+porId("omieAppsForm").addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const status = porId("omieAppsStatus");
+    const secret = campo("omieAppSecret").value.trim();
+
+    if (!editandoOmieId && secret === "") {
+        status.textContent = "Informe o app secret.";
+        return;
+    }
+
+    try {
+        await salvarOmieApp({
+            id: editandoOmieId ?? undefined,
+            nome: campo("omieAppNome").value.trim(),
+            appKey: campo("omieAppKey").value.trim(),
+            appSecret: secret || undefined,
+            ativo: true,
+        });
+        editandoOmieId = null;
+        const form = porId("omieAppsForm") as HTMLFormElement;
+        form.dataset.aberto = "0";
+        form.hidden = true;
+        campo("omieAppSecret").required = false;
+        status.textContent = "App Omie salvo.";
+        await carregarPainelOmie();
+    } catch (erro) {
+        status.textContent =
+            erro instanceof ErroDeApi ? erro.message : "Não foi possível salvar o app.";
+    }
+});
+
+await carregarPainelOmie();

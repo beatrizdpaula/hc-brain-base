@@ -11,14 +11,16 @@
 import { ErroDeApi } from "../comum/api.ts";
 import {
     carregarEmpresa,
-    salvarCodigoOmie,
+    carregarOmieApps,
+    salvarVinculoOmie,
     sincronizarOmieEmpresa,
     type EmpresaDetalhada,
     type FinanceiroEmpresa,
+    type OmieAppResumo,
 } from "../dados/empresas.ts";
 import { tagDoStatus, tagDoTipoDeReuniao, type Reuniao } from "../dados/reunioes.ts";
 import { aparenciaPorTipo, type ConteudoTreinamento } from "../dados/treinamentos.ts";
-import { campo, dado, porId, porSeletor, talvez, todos } from "../comum/dom.ts";
+import { campo, dado, porId, porSeletor, selecao, talvez, todos } from "../comum/dom.ts";
 import { atualizarSecao } from "../comum/estado.ts";
 import { duracaoEmMeses, escapar, iniciais, moeda } from "../comum/formato.ts";
 import { desenharIcones, icone } from "../comum/icones.ts";
@@ -34,6 +36,7 @@ if (detalhe) {
     let { empresa, reunioes, treinamentos, financeiro } = await carregarEmpresa(
         dado(detalhe, "empresaId"),
     );
+    const { apps: omieApps } = await carregarOmieApps();
 
     detalhe.classList.add("active");
 
@@ -43,7 +46,7 @@ if (detalhe) {
         renderFontes(empresa);
         renderReunioes(reunioes);
         renderTreinamentos(empresa, treinamentos);
-        renderOmie(empresa);
+        renderOmie(empresa, omieApps);
         renderFinanceiro(empresa, reunioes.length, financeiro);
         desenharIcones();
     }
@@ -52,8 +55,15 @@ if (detalhe) {
 
     porId("empresaOmieSalvar").addEventListener("click", async () => {
         const status = porId("empresaOmieStatus");
-        const bruto = campo("empresaOmieCodigo").value.trim();
-        const codigo = bruto === "" ? null : Number(bruto);
+        const appBruto = selecao("empresaOmieApp").value.trim();
+        const codigoBruto = campo("empresaOmieCodigo").value.trim();
+        const appId = appBruto === "" ? null : Number(appBruto);
+        const codigo = codigoBruto === "" ? null : Number(codigoBruto);
+
+        if ((appId === null) !== (codigo === null)) {
+            status.textContent = "Informe app e código juntos, ou limpe os dois para remover o vínculo.";
+            return;
+        }
 
         if (codigo !== null && (!Number.isInteger(codigo) || codigo < 1)) {
             status.textContent = "Informe um código Omie válido (número inteiro).";
@@ -61,16 +71,24 @@ if (detalhe) {
         }
 
         try {
-            const salva = await salvarCodigoOmie(empresa.id, codigo);
-            empresa = { ...empresa, omieCodigoCliente: salva.omieCodigoCliente };
-            status.textContent = codigo
-                ? `Vínculo salvo: cliente Omie ${codigo}.`
-                : "Vínculo Omie removido.";
-            renderOmie(empresa);
+            const salva = await salvarVinculoOmie(empresa.id, appId, codigo);
+            empresa = {
+                ...empresa,
+                omieAppId: salva.omieAppId,
+                omieAppNome: salva.omieAppNome,
+                omieCodigoCliente: salva.omieCodigoCliente,
+            };
+            status.textContent =
+                appId && codigo
+                    ? `Vínculo salvo: app ${salva.omieAppNome ?? appId}, cliente ${codigo}.`
+                    : "Vínculo Omie removido.";
+            renderOmie(empresa, omieApps);
         } catch (erro) {
             status.textContent =
                 erro instanceof ErroDeApi
-                    ? erro.primeiroErro("omieCodigoCliente") ?? erro.message
+                    ? erro.primeiroErro("omieCodigoCliente")
+                      ?? erro.primeiroErro("omieAppId")
+                      ?? erro.message
                     : "Não foi possível salvar o vínculo Omie.";
         }
     });
@@ -117,9 +135,24 @@ if (detalhe) {
     });
 }
 
-function renderOmie(empresa: EmpresaDetalhada): void {
-    const input = campo("empresaOmieCodigo");
-    input.value =
+function renderOmie(empresa: EmpresaDetalhada, apps: OmieAppResumo[]): void {
+    const select = selecao("empresaOmieApp");
+    const ativos = apps.filter((app) => app.ativo);
+    select.innerHTML =
+        `<option value="">Selecione o app…</option>` +
+        ativos
+            .map(
+                (app) =>
+                    `<option value="${app.id}">${escapar(app.nome)}</option>`,
+            )
+            .join("");
+
+    select.value =
+        empresa.omieAppId === null || empresa.omieAppId === undefined
+            ? ""
+            : String(empresa.omieAppId);
+
+    campo("empresaOmieCodigo").value =
         empresa.omieCodigoCliente === null || empresa.omieCodigoCliente === undefined
             ? ""
             : String(empresa.omieCodigoCliente);

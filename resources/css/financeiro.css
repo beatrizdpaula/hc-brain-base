@@ -516,3 +516,62 @@
         grid-template-columns: 90px minmax(0, 1fr) 65px;
     }
 }
+
+.omie-apps-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.omie-app-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+    background: var(--surface-alto);
+}
+.omie-app-item small {
+    display: block;
+    margin-top: 2px;
+    color: var(--texto-fraco);
+}
+.omie-app-item-acoes {
+    display: flex;
+    gap: 8px;
+}
+.omie-apps-form {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+}
+.omie-apps-campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.omie-apps-campos label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--texto-xs);
+    font-weight: 600;
+}
+.omie-apps-campos input {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--raio-sm);
+    background: var(--surface);
+    color: var(--texto);
+}
+.omie-apps-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}

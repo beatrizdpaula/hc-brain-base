@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -12,7 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * Entidade principal do banco: cada empresa tem um sócio responsável, fontes
  * vinculadas diretamente a ela e as reuniões do relacionamento.
  */
-#[Fillable(['id', 'automacao_id', 'omie_codigo_cliente', 'nome', 'setor', 'status', 'status_tag'])]
+#[Fillable([
+    'id', 'automacao_id', 'omie_codigo_cliente', 'omie_app_id',
+    'nome', 'setor', 'status', 'status_tag',
+])]
 class Empresa extends Model
 {
     protected $table = 'empresas';
@@ -23,6 +27,11 @@ class Empresa extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    public function omieApp(): BelongsTo
+    {
+        return $this->belongsTo(OmieApp::class);
+    }
 
     public function socio(): HasOne
     {

@@ -22,15 +22,18 @@ final class OmieFinanceiroSync
 
     public static function sincronizar(Empresa $empresa): EmpresaFinanceiro
     {
+        $empresa->loadMissing('omieApp');
         $codigo = $empresa->omie_codigo_cliente;
+        $app = $empresa->omieApp;
 
-        if ($codigo === null) {
+        if ($codigo === null || $app === null) {
             throw new RuntimeException(
-                "Empresa {$empresa->id} sem omie_codigo_cliente."
+                "Empresa {$empresa->id} sem app Omie ou código de cliente."
             );
         }
 
         $receberTitulos = Omie::listarTodas(
+            $app,
             'financas/contareceber/',
             'ListarContasReceber',
             'conta_receber_cadastro',
@@ -41,6 +44,7 @@ final class OmieFinanceiroSync
 
         try {
             $pagarTitulos = Omie::listarTodas(
+                $app,
                 'financas/contapagar/',
                 'ListarContasPagar',
                 'conta_pagar_cadastro',

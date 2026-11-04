@@ -66,15 +66,25 @@
             </div>
           </div>
           <div class="empresa-omie-vinculo" id="empresaOmieVinculo">
-            <label for="empresaOmieCodigo">Código do cliente no Omie</label>
+            <div class="empresa-omie-campos">
+              <div>
+                <label for="empresaOmieApp">App Omie</label>
+                <select id="empresaOmieApp">
+                  <option value="">Selecione o app…</option>
+                </select>
+              </div>
+              <div>
+                <label for="empresaOmieCodigo">Código do cliente</label>
+                <input
+                  id="empresaOmieCodigo"
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  placeholder="Ex.: 1234567"
+                />
+              </div>
+            </div>
             <div class="empresa-omie-acoes">
-              <input
-                id="empresaOmieCodigo"
-                type="number"
-                min="1"
-                inputmode="numeric"
-                placeholder="Ex.: 1234567"
-              />
               <button type="button" class="secondary" id="empresaOmieSalvar">Salvar vínculo</button>
               <button type="button" class="primary" id="empresaOmieSincronizar">Sincronizar Omie</button>
             </div>

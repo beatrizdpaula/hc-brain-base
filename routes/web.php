@@ -63,6 +63,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/comercial', [Api\ComercialController::class, 'index']);
         Route::get('/comercial/{periodo}', [Api\ComercialController::class, 'show']);
         Route::get('/financeiro', [Api\FinanceiroController::class, 'index']);
+        Route::get('/omie-apps', [Api\OmieAppController::class, 'index']);
+        Route::post('/omie-apps', [Api\OmieAppController::class, 'store']);
+        Route::put('/omie-apps/{omieApp}', [Api\OmieAppController::class, 'update']);
+        Route::delete('/omie-apps/{omieApp}', [Api\OmieAppController::class, 'destroy']);
         Route::get('/pesquisa', [Api\PesquisaController::class, 'index']);
 
         // As rotas de escrita são escritas uma a uma, e não por apiResource,

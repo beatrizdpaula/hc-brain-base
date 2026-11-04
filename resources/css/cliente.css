@@ -123,20 +123,34 @@
     font-weight: 600;
 }
 
-.empresa-omie-acoes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--esp-2);
-    align-items: center;
+.empresa-omie-campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--esp-3);
 }
 
-.empresa-omie-acoes input {
-    width: min(100%, 220px);
+.empresa-omie-campos label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: var(--texto-sm);
+    font-weight: 600;
+}
+
+.empresa-omie-campos input,
+.empresa-omie-campos select {
+    width: 100%;
     padding: 0.55rem 0.75rem;
     border: 1px solid var(--border);
     border-radius: var(--raio-sm);
     background: var(--surface);
     color: var(--texto);
+}
+
+.empresa-omie-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+    align-items: center;
 }
 
 .empresa-relacionamento-body {

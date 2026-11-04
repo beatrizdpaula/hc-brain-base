@@ -25,6 +25,8 @@ class EmpresaResource extends JsonResource
             'setor' => $this->setor,
             'status' => $this->status,
             'statusTag' => $this->status_tag,
+            'omieAppId' => $this->omie_app_id,
+            'omieAppNome' => $this->whenLoaded('omieApp', fn () => $this->omieApp?->nome),
             'omieCodigoCliente' => $this->omie_codigo_cliente,
             'socio' => [
                 'nome' => $this->socio->nome,
