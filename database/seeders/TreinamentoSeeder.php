@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Empresa;
 use App\Models\Treinamento;
 use App\Models\TreinamentoHistorico;
+use App\Support\AcademyCatalogo;
 use Illuminate\Database\Seeder;
 
 /** Base do sistema de capacitação, integrada ao banco de conhecimento. */
@@ -51,13 +52,23 @@ class TreinamentoSeeder extends Seeder
 
     public function run(): void
     {
+        $links = AcademyCatalogo::linksPorId();
+
         foreach (self::CONTEUDOS as $ordem => $conteudo) {
             [$id, $tipo, $titulo, $categoria, $nivel, $descricao, $trilha, $cursos, $processo] = $conteudo;
 
-            Treinamento::updateOrCreate(['id' => $id], compact(
-                'tipo', 'titulo', 'categoria', 'nivel', 'descricao',
-                'trilha', 'cursos', 'processo', 'ordem',
-            ));
+            Treinamento::updateOrCreate(['id' => $id], [
+                'tipo' => $tipo,
+                'titulo' => $titulo,
+                'categoria' => $categoria,
+                'nivel' => $nivel,
+                'descricao' => $descricao,
+                'trilha' => $trilha,
+                'cursos' => $cursos,
+                'processo' => $processo,
+                'ordem' => $ordem,
+                'link' => $links[$id] ?? null,
+            ]);
         }
 
         TreinamentoHistorico::query()->delete();

@@ -32,6 +32,15 @@ return [
         'nome' => env('HC_ACESSO_NOME', 'Administrador'),
     ],
 
+    /*
+    | Portal HC Academy (DigitalOcean). Os Treinamentos do Brain apontam
+    | para cá via `hc:sincronizar-academy` — o conteúdo (vídeo/PDF) continua
+    | no Academy; o Brain só guarda o link de acesso.
+    */
+    'academy' => [
+        'url' => rtrim((string) env('HC_ACADEMY_URL', 'https://stingray-app-fb2jl.ondigitalocean.app'), '/'),
+    ],
+
     'documentos' => [
 
         /*

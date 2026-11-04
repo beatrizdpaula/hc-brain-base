@@ -26,6 +26,9 @@ class PrepararBase extends Command
             $this->call('db:seed', ['--force' => true]);
         }
 
+        // Idempotente: garante links do Academy mesmo em bases já semeadas.
+        $this->call('hc:sincronizar-academy');
+
         return $this->acessoInicial();
     }
 
